@@ -22,7 +22,10 @@ class Orientation:
     h: Axis
 
     def __post_init__(self) -> None:
-        if (self.w, self.l, self.h) not in VALID_ORIENTATION:
+        axes = (self.w, self.l, self.h)
+        if not all(isinstance(axis, str) for axis in axes):
+            raise TypeError("orientation axes harus berupa string")
+        if axes not in VALID_ORIENTATION:
             raise ValueError(
                 "orientation harus memetakan w, l, dan h ke sumbu x, y, dan z; masing-masing tepat satu kali"
             )
@@ -36,7 +39,7 @@ class Orientation:
 
         try:
             map = mapping[axis]
-        except KeyError as err:
+        except (KeyError, TypeError) as err:
             raise ValueError("rotation axis harus x, y, atau z") from err
 
         return Orientation(
