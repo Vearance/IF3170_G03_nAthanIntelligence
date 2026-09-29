@@ -8,6 +8,7 @@ from src.models.truck import Truck
 from src.models.types.dims import Dimensions
 from src.models.types.orientation import Orientation
 
+
 def json_to_problem(path: str | Path) -> Problem:
     with Path(path).open(encoding="utf-8") as input_file:
         data = json.load(input_file)
