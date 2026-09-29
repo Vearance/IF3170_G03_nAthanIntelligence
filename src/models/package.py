@@ -12,7 +12,7 @@ class Package:
     value: int
     weight: float
     isFragile: bool
-    # eta: int  # should be time format; unused attribute
+    eta: int
 
     def __post_init__(self) -> None:
         if not isinstance(self.id, str) or not self.id.strip():
@@ -31,3 +31,7 @@ class Package:
             raise ValueError("package weight tidak boleh negatif")
         if not isinstance(self.isFragile, bool):
             raise TypeError("isFragile harus berupa boolean")
+        if isinstance(self.eta, bool) or not isinstance(self.eta, int):
+            raise TypeError("package eta harus berupa integer")
+        if self.eta < 0:
+            raise ValueError("package eta tidak boleh negatif")
