@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "Tugas Besar 1 AI"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "viser>=1.1.1",
+]
 
 [project.scripts]
 # hello-world = "hello_world:main" --> ganti jadi test scripts
