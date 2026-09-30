@@ -1,5 +1,5 @@
+from collections.abc import Iterator
 from dataclasses import replace
-from typing import Iterator
 
 from src.models.package import Package
 from src.models.state import State
