@@ -1,0 +1,63 @@
+{
+  "truck": {
+    "dimensions": {
+      "w": 12,
+      "l": 15,
+      "h": 8
+    },
+    "maxCapacity": 120
+  },
+  "packages": [
+    {
+      "id": "P101",
+      "dimensions": {
+        "w": 5,
+        "l": 2,
+        "h": 3
+      },
+      "orientation": {
+        "w": "y",
+        "l": "x",
+        "h": "z"
+      },
+      "value": 90,
+      "weight": 12.5,
+      "isFragile": true,
+      "eta": 1
+    },
+    {
+      "id": "P102",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 2
+      },
+      "orientation": {
+        "w": "z",
+        "l": "y",
+        "h": "x"
+      },
+      "value": 35,
+      "weight": 4,
+      "isFragile": false,
+      "eta": 4
+    },
+    {
+      "id": "P103",
+      "dimensions": {
+        "w": 4,
+        "l": 3,
+        "h": 1
+      },
+      "orientation": {
+        "w": "x",
+        "l": "z",
+        "h": "y"
+      },
+      "value": 70,
+      "weight": 8,
+      "isFragile": false,
+      "eta": 2
+    }
+  ]
+}
