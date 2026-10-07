@@ -8,8 +8,10 @@ Repo ini menggunakan [uv](https://docs.astral.sh/uv/) untuk mengelola environmen
 # Install/sinkronisasi dependency
 uv sync
 
-# Jalankan aplikasi
-uv run python src/main.py
+# Jalankan visualisasi package-truck
+uv run python src/main.py test/input/test-1.json
+
+# Buka URL yang tampil di terminal (default: http://localhost:8080)
 
 # Tambahkan dependency
 uv add <nama-package>
