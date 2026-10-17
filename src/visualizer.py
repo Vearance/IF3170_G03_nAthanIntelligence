@@ -169,6 +169,8 @@ def create_server(
     algorithms: Mapping[str, Algorithm] | None = None,
     problem_files: Mapping[str, Path] | None = None,
     selected_problem: str | None = None,
+    auto_run: bool = False,
+    initial_sa_iterations: int = 500,
 ):
     algorithms = dict(algorithms or {})
     problem_files = dict(problem_files or {})
@@ -232,6 +234,14 @@ def create_server(
         algorithm = server.gui.add_dropdown(
             "Algorithm",
             tuple(algorithms),
+            initial_value=next(iter(algorithms)),
+        )
+        sa_iterations = server.gui.add_number(
+            "Maximum iterations",
+            initial_value=initial_sa_iterations,
+            min=0,
+            step=1,
+            visible=algorithm.value == "Simulated Annealing",
         )
         visualize_iterations = server.gui.add_checkbox(
             "Visualize each iteration",
@@ -429,19 +439,31 @@ def create_server(
     def _(_) -> None:
         frame_camera()
 
-    @run_search.on_click
-    def _(_) -> None:
+    def run_selected_algorithm() -> None:
         runner = algorithms[algorithm.value]
         parameters = inspect.signature(runner).parameters
         initial_state = _make_state(problem, placements, orientations)
+        runner_kwargs = {}
+        if algorithm.value == "Simulated Annealing":
+            runner_kwargs["max_iterations"] = int(sa_iterations.value)
         if "on_iteration" in parameters and visualize_iterations.value:
-            result = runner(initial_state, on_iteration=animate_iteration)
-        else:
-            result = runner(initial_state)
+            runner_kwargs["on_iteration"] = animate_iteration
+        result = runner(initial_state, **runner_kwargs)
         rstate = _state_from_result(result)
         if rstate.problem is not problem:
             raise ValueError("algorithm result belongs to a different problem")
-        if not Evaluate.is_valid(rstate):
+        details = _result_details(result)
+        is_valid = Evaluate.is_valid(rstate)
+        completion = f"{algorithm.value} completed"
+        if not is_valid:
+            completion += " with an invalid state"
+        summary_details = "; ".join(
+            detail.removeprefix("- ") for detail in details.splitlines()
+        )
+        if summary_details:
+            completion += f" ({summary_details})"
+        add_log(f"{completion}.")
+        if not is_valid:
             search_result.content = (
                 f"- algorithm: {algorithm.value.lower()}\n"
                 "- state: invalid"
@@ -457,11 +479,14 @@ def create_server(
         orientations.clear()
         orientations.update(_orientations_from_state(rstate))
         refresh()
-        details = _result_details(result)
         search_result.content = (
             f"- algorithm: {algorithm.value}\n"
             f"{details}"
         )
+
+    @run_search.on_click
+    def _(_) -> None:
+        run_selected_algorithm()
 
     @remove_all.on_click
     def _(_) -> None:
@@ -477,10 +502,16 @@ def create_server(
         add_log("Truck reset; all packages removed.")
         refresh()
 
-    algorithm.on_update(lambda _: refresh())
+    def update_algorithm(_) -> None:
+        sa_iterations.visible = algorithm.value == "Simulated Annealing"
+        refresh()
+
+    algorithm.on_update(update_algorithm)
 
     refresh()
     frame_camera()
+    if auto_run:
+        run_selected_algorithm()
     return server
 
 
@@ -521,8 +552,11 @@ def main() -> None:
     parser.add_argument(
         "--iterations",
         type=int,
-        default=500,
-        help="maximum iterations for Simulated Annealing",
+        default=None,
+        help=(
+            "maximum iterations for Simulated Annealing; when provided, "
+            "auto-run Hill-Climbing on startup unless --simulate is used"
+        ),
     )
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--port", type=int, default=8080)
@@ -551,10 +585,13 @@ def main() -> None:
 
     problem = json_to_problem(selected_path)
     state = State.empty(problem)
+    simulated_annealing_iterations = (
+        args.iterations if args.iterations is not None else 500
+    )
     if args.simulate:
         state = simulated_annealing(
             state,
-            max_iterations=args.iterations,
+            max_iterations=simulated_annealing_iterations,
             seed=args.seed,
         ).state
 
@@ -564,6 +601,8 @@ def main() -> None:
         port=args.port,
         problem_files=problem_files,
         selected_problem=selected_problem,
+        auto_run=args.iterations is not None and not args.simulate,
+        initial_sa_iterations=simulated_annealing_iterations,
         algorithms={
             "Steepest-Ascent Hill-Climbing": lambda current_state, on_iteration=None: (
                 steepest_ascent_hill_climbing(
@@ -571,10 +610,10 @@ def main() -> None:
                     on_iteration=on_iteration,
                 )
             ),
-            "Simulated Annealing": lambda current_state, on_iteration=None: (
+            "Simulated Annealing": lambda current_state, max_iterations=500, on_iteration=None: (
                 simulated_annealing(
                     current_state,
-                    max_iterations=args.iterations,
+                    max_iterations=max_iterations,
                     seed=args.seed,
                     on_iteration=on_iteration,
                 )

@@ -105,6 +105,32 @@ def try_place(
     return try_move(state, package_id, position)
 
 
+def first_valid_placement(state: State, package_id: str) -> State | None:
+    if package_id not in state.out_pkg:
+        return None
+
+    package = state.problem.get_package(package_id)
+    truck = state.problem.truck.dimensions
+    for orientation in _orientation_variants(state.pkg_orientation[package_id]):
+        width, length, height = _oriented_dimensions(package, orientation)
+        for z in range(truck.h - height + 1):
+            for y in range(truck.l - length + 1):
+                for x in range(truck.w - width + 1):
+                    position = Position(x=x, y=y, z=z)
+                    if orientation == state.pkg_orientation[package_id]:
+                        candidate = try_place(state, package_id, position)
+                    else:
+                        candidate = _try_place_with_orientation(
+                            state,
+                            package_id,
+                            position,
+                            orientation,
+                        )
+                    if candidate is not None:
+                        return candidate
+    return None
+
+
 def try_remove(state: State, package_id: str) -> State | None:
     return try_move(state, package_id, None)
 
