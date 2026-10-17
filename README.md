@@ -9,12 +9,9 @@ Repo ini menggunakan [uv](https://docs.astral.sh/uv/) untuk mengelola environmen
 uv sync
 
 # Try visualizer
-uv run python src/visualizer.py
+uv run vis
 # or
-uv run python src/visualizer.py test/input/test-1.json
-
-# Try test
-uv run python -m unittest discover -s test/scripts -p "test_*.py"
+uv run vis test/input/test-4.json
 
 # Tambahkan dependency
 uv add <nama-package>
