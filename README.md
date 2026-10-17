@@ -9,6 +9,8 @@ Repo ini menggunakan [uv](https://docs.astral.sh/uv/) untuk mengelola environmen
 uv sync
 
 # Try visualizer
+uv run python src/visualizer.py
+# or
 uv run python src/visualizer.py test/input/test-1.json
 
 # Try test
