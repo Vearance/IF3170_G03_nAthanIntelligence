@@ -9,7 +9,9 @@ from src.models.package import Package
 from src.models.result import Result
 from src.models.state import State
 from src.models.types.orientation import Orientation
+from src.models.types.position import Position
 from src.utils.evaluate import Evaluate
+from src.utils.move import try_place, try_remove, try_rotate
 
 
 def simulated_annealing(
@@ -83,9 +85,13 @@ def _random_neighbour(state: State, rng: random.Random) -> State | None:
         if operation == "place":
             candidate = _try_place(state, rng)
         elif operation == "remove":
-            candidate = _remove(state, rng.choice(placed))
+            candidate = try_remove(state, rng.choice(placed))
         else:
-            candidate = _try_rotate(state, rng.choice(placed), rng)
+            candidate = try_rotate(
+                state,
+                rng.choice(placed),
+                rng.choice(("x", "y", "z")),
+            )
         if candidate is not None:
             return candidate
     return None
@@ -113,51 +119,15 @@ def _place(state: State, package_id: str, rng: random.Random) -> State | None:
     z_levels = tuple(sorted(z_levels))
 
     for _ in range(24):
-        x = rng.randrange(max_x + 1)
-        y = rng.randrange(max_y + 1)
-        z = rng.choice(z_levels)
-        if any(
-            state.grid[current_z][current_y][current_x] is not None
-            for current_z in range(z, z + height)
-            for current_y in range(y, y + length)
-            for current_x in range(x, x + width)
-        ):
-            continue
-
-        candidate = state.copy()
-        for current_z in range(z, z + height):
-            for current_y in range(y, y + length):
-                for current_x in range(x, x + width):
-                    candidate.grid[current_z][current_y][current_x] = package_id
-
-        candidate.out_pkg.discard(package_id)
-        candidate.value = state.value + package.value
-        if Evaluate.is_valid(candidate):
+        position = Position(
+            x=rng.randrange(max_x + 1),
+            y=rng.randrange(max_y + 1),
+            z=rng.choice(z_levels),
+        )
+        candidate = try_place(state, package_id, position)
+        if candidate is not None:
             return candidate
     return None
-
-def _remove(state: State, package_id: str) -> State:
-    candidate = state.copy()
-    for layer in candidate.grid:
-        for row in layer:
-            for index, cell in enumerate(row):
-                if cell == package_id:
-                    row[index] = None
-    candidate.out_pkg.add(package_id)
-    candidate.value = state.value - state.problem.get_package(package_id).value
-    return candidate
-
-def _try_rotate(
-    state: State, package_id: str, rng: random.Random
-) -> State | None:
-    orientation = state.pkg_orientation[package_id]
-    new_orientation = orientation.rotate(rng.choice(("x", "y", "z")))
-    if new_orientation == orientation:
-        return None
-
-    candidate = _remove(state, package_id)
-    candidate.pkg_orientation[package_id] = new_orientation
-    return _place(candidate, package_id, rng)
 
 
 def _oriented_dimensions(
