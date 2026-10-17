@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import random
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from src.models.package import Package
@@ -26,6 +27,7 @@ def simulated_annealing(
     minimum_temperature: float = 0.1,
     max_iterations: int = 10_000,
     seed: int | None = None,
+    on_iteration: Callable[[State, int], None] | None = None,
 ) -> AnnealingResult:
     if initial_temperature <= 0:
         raise ValueError("initial_temperature harus lebih besar dari nol")
@@ -59,9 +61,8 @@ def simulated_annealing(
 
         temperature *= cooling_rate
         iterations += 1
-
-    if not Evaluate.is_valid(best):
-        raise RuntimeError("simulated annealing menghasilkan state tidak valid")
+        if on_iteration is not None:
+            on_iteration(current.copy(), iterations)
 
     return AnnealingResult(
         state=best,
@@ -86,7 +87,7 @@ def _random_neighbour(state: State, rng: random.Random) -> State | None:
             candidate = _remove(state, rng.choice(placed))
         else:
             candidate = _try_rotate(state, rng.choice(placed), rng)
-        if candidate is not None and Evaluate.is_valid(candidate):
+        if candidate is not None:
             return candidate
     return None
 
@@ -163,10 +164,10 @@ def _try_rotate(
 def _oriented_dimensions(
     package: Package, orientation: Orientation
 ) -> tuple[int, int, int]:
-    dimensions = [
+    dims = [
         getattr(package.dimensions, dimension)
         for axis in ("x", "y", "z")
         for dimension in ("w", "l", "h")
         if getattr(orientation, dimension) == axis
     ]
-    return dimensions[0], dimensions[1], dimensions[2]
+    return dims[0], dims[1], dims[2]

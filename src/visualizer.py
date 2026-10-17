@@ -1,6 +1,7 @@
 import colorsys
 import argparse
 from importlib import import_module
+import inspect
 import sys
 import time
 from dataclasses import replace
@@ -15,12 +16,11 @@ from src.models.state import State
 from src.models.types.orientation import Orientation
 from src.utils.evaluate import Evaluate
 from src.utils.parser import json_to_problem
-# from src.algo.simulated_annealing import simulated_annealing
 simulated_annealing = import_module(
     "src.algo.simulated-annealing"
 ).simulated_annealing
 
-Algorithm = Callable[[State], Any]
+Algorithm = Callable[..., Any]
 
 
 def _color(index: int, total: int) -> tuple[int, int, int]:
@@ -139,7 +139,7 @@ def create_server(
         raise ValueError("at least one algorithm must be registered")
 
     server = viser.ViserServer(port=port)
-    truck_dimensions = problem.truck.dimensions
+    truck = problem.truck.dimensions
     package_ids = tuple(problem.packages)
     placements = _placements_from_state(initial_state) if initial_state else {}
     orientations = (
@@ -150,7 +150,7 @@ def create_server(
             for package_id, package in problem.packages.items()
         }
     )
-    package_handles = {}
+    handles = {}
     colors = {
         package_id: _color(index, len(package_ids))
         for index, package_id in enumerate(package_ids)
@@ -158,19 +158,19 @@ def create_server(
 
     server.scene.add_box(
         "/truck",
-        dimensions=(truck_dimensions.w, truck_dimensions.l, truck_dimensions.h),
-        position=(truck_dimensions.w / 2, truck_dimensions.l / 2, truck_dimensions.h / 2),
+        dimensions=(truck.w, truck.l, truck.h),
+        position=(truck.w / 2, truck.l / 2, truck.h / 2),
         color=(100, 116, 139),
         opacity=0.08,
         wireframe=True,
     )
     server.scene.add_grid(
         "/floor",
-        width=float(truck_dimensions.w),
-        height=float(truck_dimensions.l),
+        width=float(truck.w),
+        height=float(truck.l),
         plane="xy",
         cell_size=1.0,
-        position=(truck_dimensions.w / 2, truck_dimensions.l / 2, 0.0),
+        position=(truck.w / 2, truck.l / 2, 0.0),
     )
 
     with server.gui.add_folder("Local search"):
@@ -192,14 +192,14 @@ def create_server(
             return x + width / 2, y + length / 2, z + height / 2
         index = package_ids.index(package_id)
         return (
-            truck_dimensions.w + 2.0 + (index % 4) * 4.0,
+            truck.w + 2.0 + (index % 4) * 4.0,
             (index // 4) * 4.0 + 2.0,
             height / 2,
         )
 
     def refresh() -> None:
         state = _make_state(problem, placements, orientations)
-        for package_id, handle in package_handles.items():
+        for package_id, handle in handles.items():
             package = problem.get_package(package_id)
             handle.dimensions = _axis_dimensions(package, orientations[package_id])
             handle.position = package_position(package_id)
@@ -214,10 +214,55 @@ def create_server(
             f"{problem.truck.maxCapacity:g}**  |  state: **{validity}**"
         )
 
+    def animate_placements(
+        rplace: dict[str, tuple[int, int, int]],
+        rori: dict[str, Orientation],
+    ) -> None:
+        placements.clear()
+        orientations.clear()
+        orientations.update(rori)
+        refresh()
+
+        for package_id in sorted(
+            rplace,
+            key=lambda item: rplace[item][::-1],
+        ):
+            placements[package_id] = rplace[package_id]
+            refresh()
+            handles[package_id].opacity = 0.15
+            time.sleep(0.05)
+            handles[package_id].opacity = 0.80
+            time.sleep(0.05)
+
+        refresh()
+
+    def animate_iteration(state: State, _iteration: int) -> None:
+        nplace = _placements_from_state(state)
+        nori = _orientations_from_state(state)
+        changed = {
+            package_id
+            for package_id in package_ids
+            if placements.get(package_id) != nplace.get(package_id)
+            or orientations[package_id] != nori[package_id]
+        }
+
+        placements.clear()
+        placements.update(nplace)
+        orientations.clear()
+        orientations.update(nori)
+        refresh()
+
+        for package_id in changed:
+            handles[package_id].opacity = 0.15
+        time.sleep(0.005)
+        for package_id in changed:
+            handles[package_id].opacity = 0.80 if package_id in placements else 0.35
+        time.sleep(0.005)
+
     for package_id in package_ids:
         package = problem.get_package(package_id)
         dimensions = _axis_dimensions(package, orientations[package_id])
-        package_handles[package_id] = server.scene.add_box(
+        handles[package_id] = server.scene.add_box(
             f"/packages/{package_id}",
             dimensions=dimensions,
             position=package_position(package_id),
@@ -227,23 +272,30 @@ def create_server(
 
     @run_search.on_click
     def _(_) -> None:
-        result = algorithms[algorithm.value](_make_state(problem, placements, orientations))
-        result_state = _state_from_result(result)
-        if result_state.problem is not problem:
+        runner = algorithms[algorithm.value]
+        parameters = inspect.signature(runner).parameters
+        if "on_iteration" in parameters:
+            result = runner(
+                _make_state(problem, placements, orientations),
+                on_iteration=animate_iteration,
+            )
+        else:
+            result = runner(_make_state(problem, placements, orientations))
+        rstate = _state_from_result(result)
+        if rstate.problem is not problem:
             raise ValueError("algorithm result belongs to a different problem")
-        if not Evaluate.is_valid(result_state):
+        if not Evaluate.is_valid(rstate):
             notification.content = (
                 f"**{algorithm.value} failed:** the search returned an invalid placement."
             )
             return
-        placements.clear()
-        placements.update(_placements_from_state(result_state))
-        orientations.clear()
-        orientations.update(_orientations_from_state(result_state))
+        animate_placements(
+            _placements_from_state(rstate),
+            _orientations_from_state(rstate),
+        )
         details = _result_details(result)
         suffix = f": {details}" if details else ""
-        notification.content = f"**Placement completed** — {algorithm.value}{suffix}."
-        refresh()
+        notification.content = f"**Placement completed** - {algorithm.value}{suffix}."
 
     @remove_all.on_click
     def _(_) -> None:
@@ -299,10 +351,11 @@ def main() -> None:
         state,
         port=args.port,
         algorithms={
-            "Simulated Annealing": lambda current_state: simulated_annealing(
+            "Simulated Annealing": lambda current_state, on_iteration=None: simulated_annealing(
                 current_state,
                 max_iterations=args.iterations,
                 seed=args.seed,
+                on_iteration=on_iteration,
             )
         },
     )
