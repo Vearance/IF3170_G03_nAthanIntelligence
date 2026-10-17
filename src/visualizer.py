@@ -1,21 +1,23 @@
-import colorsys
 import argparse
-from importlib import import_module
+import colorsys
 import inspect
 import sys
 import time
+from collections.abc import Callable, Mapping
 from dataclasses import replace
+from importlib import import_module
 from pathlib import Path
-from typing import Any, Callable, Mapping
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import viser
 
-from src.models.state import State
+from src.models.state import Grid, State
 from src.models.types.orientation import Orientation
 from src.utils.evaluate import Evaluate
 from src.utils.parser import json_to_problem
+
 simulated_annealing = import_module(
     "src.algo.simulated-annealing"
 ).simulated_annealing
@@ -45,15 +47,16 @@ def _make_state(
     orientations: dict[str, Orientation] | None = None,
 ) -> State:
     truck = problem.truck.dimensions
-    grid = [
+    grid: Grid = [
         [[None for _ in range(truck.w)] for _ in range(truck.l)]
         for _ in range(truck.h)
     ]
     for package_id, (x_start, y_start, z_start) in placements.items():
         package = problem.get_package(package_id)
-        width, length, height = _axis_dimensions(
-            package, (orientations or {}).get(package_id)
-        )
+        orientation = package.orientation
+        if orientations is not None and package_id in orientations:
+            orientation = orientations[package_id]
+        width, length, height = _axis_dimensions(package, orientation)
         for z in range(z_start, z_start + height):
             for y in range(y_start, y_start + length):
                 for x in range(x_start, x_start + width):
@@ -61,7 +64,11 @@ def _make_state(
                         continue
                     grid[z][y][x] = package_id
     pkg_orientation = {
-        package_id: replace((orientations or {}).get(package_id, package.orientation))
+        package_id: replace(
+            orientations[package_id]
+            if orientations is not None and package_id in orientations
+            else package.orientation
+        )
         for package_id, package in problem.packages.items()
     }
     return State(
@@ -116,13 +123,20 @@ def _result_details(result: Any) -> str:
     if isinstance(result, State):
         details.append(f"value={result.value}")
     elif hasattr(result, "__dataclass_fields__"):
+        result_state = getattr(result, "state", None)
+        if isinstance(result_state, State):
+            details.append(f"value={result_state.value}")
         details.extend(
             f"{name}={getattr(result, name)}"
             for name in result.__dataclass_fields__
-            if name != "state"
+            if name not in {"state", "initial_state", "value_history"}
         )
     elif isinstance(result, Mapping):
-        details.extend(f"{key}={value}" for key, value in result.items() if key != "state")
+        details.extend(
+            f"{key}={value}"
+            for key, value in result.items()
+            if key not in {"state", "initial_state", "value_history"}
+        )
 
     return ", ".join(details)
 

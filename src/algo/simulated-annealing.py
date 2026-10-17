@@ -3,20 +3,13 @@ from __future__ import annotations
 import math
 import random
 from collections.abc import Callable
-from dataclasses import dataclass
+from time import perf_counter
 
 from src.models.package import Package
+from src.models.result import Result
 from src.models.state import State
 from src.models.types.orientation import Orientation
 from src.utils.evaluate import Evaluate
-
-
-@dataclass(frozen=True)
-class AnnealingResult:
-    state: State
-    iterations: int
-    accepted_moves: int
-    global_maximum_value: int
 
 
 def simulated_annealing(
@@ -28,7 +21,7 @@ def simulated_annealing(
     max_iterations: int = 10_000,
     seed: int | None = None,
     on_iteration: Callable[[State, int], None] | None = None,
-) -> AnnealingResult:
+) -> Result:
     if initial_temperature <= 0:
         raise ValueError("initial_temperature harus lebih besar dari nol")
     if not 0 < cooling_rate < 1:
@@ -38,11 +31,14 @@ def simulated_annealing(
     if max_iterations < 0:
         raise ValueError("max_iterations tidak boleh negatif")
 
+    started_at = perf_counter()
     rng = random.Random(seed)
     current = initial_state.copy()
     if not Evaluate.is_valid(current):
         current = State.empty(initial_state.problem)
+    initial = current.copy()
     best = current.copy()
+    value_history = [best.value]
     temperature = initial_temperature
     accepted_moves = 0
     iterations = 0
@@ -61,14 +57,17 @@ def simulated_annealing(
 
         temperature *= cooling_rate
         iterations += 1
+        value_history.append(best.value)
         if on_iteration is not None:
             on_iteration(current.copy(), iterations)
 
-    return AnnealingResult(
+    return Result(
+        initial_state=initial,
         state=best,
+        value_history=value_history,
         iterations=iterations,
-        accepted_moves=accepted_moves,
-        global_maximum_value=best.value,
+        duration_seconds=perf_counter() - started_at,
+        metrics={"accepted_moves": accepted_moves},
     )
 
 def _random_neighbour(state: State, rng: random.Random) -> State | None:
