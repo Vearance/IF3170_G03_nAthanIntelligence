@@ -1,11 +1,9 @@
 import argparse
 import colorsys
-import inspect
 import sys
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import replace
-from importlib import import_module
 from pathlib import Path
 from typing import Any
 
@@ -13,14 +11,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import viser
 
+from src.algo.hill_climb import steepest_ascent_hill_climbing
+from src.algo.simulated_annealing import simulated_annealing
 from src.models.state import Grid, State
 from src.models.types.orientation import Orientation
 from src.utils.evaluate import Evaluate
 from src.utils.parser import json_to_problem
-
-simulated_annealing = import_module(
-    "src.algo.simulated-annealing"
-).simulated_annealing
 
 Algorithm = Callable[..., Any]
 
@@ -287,14 +283,15 @@ def create_server(
     @run_search.on_click
     def _(_) -> None:
         runner = algorithms[algorithm.value]
-        parameters = inspect.signature(runner).parameters
-        if "on_iteration" in parameters:
-            result = runner(
-                _make_state(problem, placements, orientations),
-                on_iteration=animate_iteration,
-            )
-        else:
-            result = runner(_make_state(problem, placements, orientations))
+        # parameters = inspect.signature(runner).parameters
+        # if "on_iteration" in parameters:
+        #     result = runner(
+        #         _make_state(problem, placements, orientations),
+        #         on_iteration=animate_iteration,
+        #     )
+        # else:
+        #     result = runner(_make_state(problem, placements, orientations))
+        result = runner(_make_state(problem, placements, orientations))
         rstate = _state_from_result(result)
         if rstate.problem is not problem:
             raise ValueError("algorithm result belongs to a different problem")
@@ -303,10 +300,16 @@ def create_server(
                 f"**{algorithm.value} failed:** the search returned an invalid placement."
             )
             return
-        animate_placements(
-            _placements_from_state(rstate),
-            _orientations_from_state(rstate),
-        )
+        # Replay final placements one by one; keep disabled for now.
+        # animate_placements(
+        #     _placements_from_state(rstate),
+        #     _orientations_from_state(rstate),
+        # )
+        placements.clear()
+        placements.update(_placements_from_state(rstate))
+        orientations.clear()
+        orientations.update(_orientations_from_state(rstate))
+        refresh()
         details = _result_details(result)
         suffix = f": {details}" if details else ""
         notification.content = f"**Placement completed** - {algorithm.value}{suffix}."
@@ -365,12 +368,21 @@ def main() -> None:
         state,
         port=args.port,
         algorithms={
-            "Simulated Annealing": lambda current_state, on_iteration=None: simulated_annealing(
-                current_state,
-                max_iterations=args.iterations,
-                seed=args.seed,
-                on_iteration=on_iteration,
-            )
+            "Steepest-Ascent Hill-Climbing": lambda current_state, on_iteration=None: (
+                steepest_ascent_hill_climbing(
+                    current_state,
+                    max_iterations=args.iterations,
+                    on_iteration=on_iteration,
+                )
+            ),
+            "Simulated Annealing": lambda current_state, on_iteration=None: (
+                simulated_annealing(
+                    current_state,
+                    max_iterations=args.iterations,
+                    seed=args.seed,
+                    on_iteration=on_iteration,
+                )
+            ),
         },
     )
     while True:
