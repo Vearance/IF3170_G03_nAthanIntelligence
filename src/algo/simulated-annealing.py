@@ -15,6 +15,7 @@ class AnnealingResult:
     state: State
     iterations: int
     accepted_moves: int
+    global_maximum_value: int
 
 
 def simulated_annealing(
@@ -66,17 +67,18 @@ def simulated_annealing(
         state=best,
         iterations=iterations,
         accepted_moves=accepted_moves,
+        global_maximum_value=best.value,
     )
 
 def _random_neighbour(state: State, rng: random.Random) -> State | None:
     operations = ["place"] if state.out_pkg else []
-    placed = list(state.package_ids_in_grid())
+    placed = sorted(state.package_ids_in_grid())
     if placed:
         operations.extend(("remove", "rotate"))
     if not operations:
         return None
 
-    for _ in range(25):
+    for _ in range(8):
         operation = rng.choice(operations)
         if operation == "place":
             candidate = _try_place(state, rng)
@@ -89,39 +91,49 @@ def _random_neighbour(state: State, rng: random.Random) -> State | None:
     return None
 
 def _try_place(state: State, rng: random.Random) -> State | None:
-    return _place(state, rng.choice(tuple(state.out_pkg)), rng)
+    return _place(state, rng.choice(sorted(state.out_pkg)), rng)
 
 def _place(state: State, package_id: str, rng: random.Random) -> State | None:
     package = state.problem.get_package(package_id)
     orientation = state.pkg_orientation[package_id]
     width, length, height = _oriented_dimensions(package, orientation)
     truck = state.problem.truck.dimensions
-    positions = [
-        (x, y, z)
-        for z in range(truck.h - height + 1)
-        for y in range(truck.l - length + 1)
-        for x in range(truck.w - width + 1)
-    ]
-    rng.shuffle(positions)
+    max_x = truck.w - width
+    max_y = truck.l - length
+    max_z = truck.h - height
+    if min(max_x, max_y, max_z) < 0:
+        return None
 
-    for x, y, z in positions:
-        candidate = state.copy()
+    z_levels = {0}
+    for layer_index, layer in enumerate(state.grid):
+        if layer_index < max_z and any(
+            cell is not None for row in layer for cell in row
+        ):
+            z_levels.add(layer_index + 1)
+    z_levels = tuple(sorted(z_levels))
+
+    for _ in range(24):
+        x = rng.randrange(max_x + 1)
+        y = rng.randrange(max_y + 1)
+        z = rng.choice(z_levels)
         if any(
-            candidate.grid[current_z][current_y][current_x] is not None
+            state.grid[current_z][current_y][current_x] is not None
             for current_z in range(z, z + height)
             for current_y in range(y, y + length)
             for current_x in range(x, x + width)
         ):
             continue
 
+        candidate = state.copy()
         for current_z in range(z, z + height):
             for current_y in range(y, y + length):
                 for current_x in range(x, x + width):
                     candidate.grid[current_z][current_y][current_x] = package_id
 
         candidate.out_pkg.discard(package_id)
-        candidate.value = candidate.recalculate_value()
-        return candidate
+        candidate.value = state.value + package.value
+        if Evaluate.is_valid(candidate):
+            return candidate
     return None
 
 def _remove(state: State, package_id: str) -> State:
@@ -132,7 +144,7 @@ def _remove(state: State, package_id: str) -> State:
                 if cell == package_id:
                     row[index] = None
     candidate.out_pkg.add(package_id)
-    candidate.value = candidate.recalculate_value()
+    candidate.value = state.value - state.problem.get_package(package_id).value
     return candidate
 
 def _try_rotate(

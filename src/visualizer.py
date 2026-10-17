@@ -182,6 +182,7 @@ def create_server(
         remove_all = server.gui.add_button("Remove all packages", color="red")
 
     status = server.gui.add_markdown("Choose an algorithm and run local search.")
+    notification = server.gui.add_markdown("")
 
     def package_position(package_id: str) -> tuple[float, float, float]:
         package = problem.get_package(package_id)
@@ -231,7 +232,9 @@ def create_server(
         if result_state.problem is not problem:
             raise ValueError("algorithm result belongs to a different problem")
         if not Evaluate.is_valid(result_state):
-            status.content = "Search returned an invalid state; layout was not changed."
+            notification.content = (
+                f"**{algorithm.value} failed:** the search returned an invalid placement."
+            )
             return
         placements.clear()
         placements.update(_placements_from_state(result_state))
@@ -239,7 +242,7 @@ def create_server(
         orientations.update(_orientations_from_state(result_state))
         details = _result_details(result)
         suffix = f": {details}" if details else ""
-        status.content = f"{algorithm.value} completed{suffix}."
+        notification.content = f"**Placement completed** — {algorithm.value}{suffix}."
         refresh()
 
     @remove_all.on_click
@@ -252,7 +255,7 @@ def create_server(
                 for package_id, package in problem.packages.items()
             }
         )
-        status.content = "All packages removed. The truck is in a valid empty state."
+        notification.content = "**All packages removed.** The truck is in a valid empty state."
         refresh()
 
     algorithm.on_update(lambda _: refresh())
