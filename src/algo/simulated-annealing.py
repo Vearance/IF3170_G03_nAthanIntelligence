@@ -49,11 +49,11 @@ def simulated_annealing(
         if candidate is None:
             break
 
-        delta = Evaluate.value(candidate) - Evaluate.value(current)
+        delta = candidate.value - current.value
         if delta >= 0 or rng.random() < math.exp(delta / temperature):
             current = candidate
             accepted_moves += 1
-            if Evaluate.value(current) > Evaluate.value(best):
+            if current.value > best.value:
                 best = current.copy()
 
         temperature *= cooling_rate
@@ -67,7 +67,6 @@ def simulated_annealing(
         iterations=iterations,
         accepted_moves=accepted_moves,
     )
-
 
 def _random_neighbour(state: State, rng: random.Random) -> State | None:
     operations = ["place"] if state.out_pkg else []
@@ -89,9 +88,10 @@ def _random_neighbour(state: State, rng: random.Random) -> State | None:
             return candidate
     return None
 
-
 def _try_place(state: State, rng: random.Random) -> State | None:
-    package_id = rng.choice(tuple(state.out_pkg))
+    return _place(state, rng.choice(tuple(state.out_pkg)), rng)
+
+def _place(state: State, package_id: str, rng: random.Random) -> State | None:
     package = state.problem.get_package(package_id)
     orientation = state.pkg_orientation[package_id]
     width, length, height = _oriented_dimensions(package, orientation)
@@ -113,15 +113,16 @@ def _try_place(state: State, rng: random.Random) -> State | None:
             for current_x in range(x, x + width)
         ):
             continue
+
         for current_z in range(z, z + height):
             for current_y in range(y, y + length):
                 for current_x in range(x, x + width):
                     candidate.grid[current_z][current_y][current_x] = package_id
-        candidate.out_pkg.remove(package_id)
+
+        candidate.out_pkg.discard(package_id)
         candidate.value = candidate.recalculate_value()
         return candidate
     return None
-
 
 def _remove(state: State, package_id: str) -> State:
     candidate = state.copy()
@@ -134,60 +135,26 @@ def _remove(state: State, package_id: str) -> State:
     candidate.value = candidate.recalculate_value()
     return candidate
 
-
 def _try_rotate(
     state: State, package_id: str, rng: random.Random
 ) -> State | None:
-    package = state.problem.get_package(package_id)
-    old_orientation = state.pkg_orientation[package_id]
-    new_orientation = old_orientation.rotate(rng.choice(("x", "y", "z")))
-    if new_orientation == old_orientation:
+    orientation = state.pkg_orientation[package_id]
+    new_orientation = orientation.rotate(rng.choice(("x", "y", "z")))
+    if new_orientation == orientation:
         return None
 
     candidate = _remove(state, package_id)
     candidate.pkg_orientation[package_id] = new_orientation
-    return _try_place_existing(candidate, package_id, package, rng)
-
-
-def _try_place_existing(
-    state: State, package_id: str, package: Package, rng: random.Random
-) -> State | None:
-    orientation = state.pkg_orientation[package_id]
-    width, length, height = _oriented_dimensions(package, orientation)
-    truck = state.problem.truck.dimensions
-    positions = [
-        (x, y, z)
-        for z in range(truck.h - height + 1)
-        for y in range(truck.l - length + 1)
-        for x in range(truck.w - width + 1)
-    ]
-    rng.shuffle(positions)
-    for x, y, z in positions:
-        candidate = state.copy()
-        if any(
-            candidate.grid[current_z][current_y][current_x] is not None
-            for current_z in range(z, z + height)
-            for current_y in range(y, y + length)
-            for current_x in range(x, x + width)
-        ):
-            continue
-        for current_z in range(z, z + height):
-            for current_y in range(y, y + length):
-                for current_x in range(x, x + width):
-                    candidate.grid[current_z][current_y][current_x] = package_id
-        candidate.out_pkg.remove(package_id)
-        candidate.value = candidate.recalculate_value()
-        return candidate
-    return None
+    return _place(candidate, package_id, rng)
 
 
 def _oriented_dimensions(
     package: Package, orientation: Orientation
 ) -> tuple[int, int, int]:
-    dimensions: list[int] = []
-    for axis in ("x", "y", "z"):
-        for dimension in ("w", "l", "h"):
-            if getattr(orientation, dimension) == axis:
-                dimensions.append(getattr(package.dimensions, dimension))
-                break
+    dimensions = [
+        getattr(package.dimensions, dimension)
+        for axis in ("x", "y", "z")
+        for dimension in ("w", "l", "h")
+        if getattr(orientation, dimension) == axis
+    ]
     return dimensions[0], dimensions[1], dimensions[2]

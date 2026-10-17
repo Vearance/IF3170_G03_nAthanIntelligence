@@ -1,17 +1,26 @@
-import argparse
 import colorsys
+import argparse
+from importlib import import_module
+import sys
 import time
 from dataclasses import replace
 from pathlib import Path
+from typing import Any, Callable, Mapping
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import viser
-
-from src.algo.simulated_annealing import simulated_annealing
 
 from src.models.state import State
 from src.models.types.orientation import Orientation
 from src.utils.evaluate import Evaluate
 from src.utils.parser import json_to_problem
+# from src.algo.simulated_annealing import simulated_annealing
+simulated_annealing = import_module(
+    "src.algo.simulated-annealing"
+).simulated_annealing
+
+Algorithm = Callable[[State], Any]
 
 
 def _color(index: int, total: int) -> tuple[int, int, int]:
@@ -89,12 +98,46 @@ def _orientations_from_state(state: State) -> dict[str, Orientation]:
     }
 
 
+def _state_from_result(result: Any) -> State:
+    if isinstance(result, State):
+        return result
+
+    state = result.get("state") if isinstance(result, Mapping) else getattr(result, "state", None)
+    if isinstance(state, State):
+        return state
+
+    raise TypeError(
+        "algorithm result must be a State or expose a State through the 'state' attribute"
+    )
+
+
+def _result_details(result: Any) -> str:
+    details = []
+    if isinstance(result, State):
+        details.append(f"value={result.value}")
+    elif hasattr(result, "__dataclass_fields__"):
+        details.extend(
+            f"{name}={getattr(result, name)}"
+            for name in result.__dataclass_fields__
+            if name != "state"
+        )
+    elif isinstance(result, Mapping):
+        details.extend(f"{key}={value}" for key, value in result.items() if key != "state")
+
+    return ", ".join(details)
+
+
 def create_server(
     problem,
     initial_state: State | None = None,
     *,
     port: int = 8080,
+    algorithms: Mapping[str, Algorithm] | None = None,
 ):
+    algorithms = dict(algorithms or {})
+    if not algorithms:
+        raise ValueError("at least one algorithm must be registered")
+
     server = viser.ViserServer(port=port)
     truck_dimensions = problem.truck.dimensions
     package_ids = tuple(problem.packages)
@@ -133,21 +176,7 @@ def create_server(
     with server.gui.add_folder("Local search"):
         algorithm = server.gui.add_dropdown(
             "Algorithm",
-            (
-                "Choose algorithm...",
-                "Hill Climbing",
-                "Simulated Annealing",
-                "Genetic Algorithm",
-            ),
-        )
-        hill_climbing_variant = server.gui.add_dropdown(
-            "Hill climbing variant",
-            (
-                "Steepest Ascent",
-                "Sideways Move",
-                "Random Restart",
-            ),
-            visible=False,
+            tuple(algorithms),
         )
         run_search = server.gui.add_button("Run local search", color="green")
         remove_all = server.gui.add_button("Remove all packages", color="red")
@@ -178,15 +207,8 @@ def create_server(
 
         weight = sum(problem.get_package(package_id).weight for package_id in placements)
         validity = "valid" if Evaluate.is_valid(state) else "invalid"
-        hill_climbing_variant.visible = algorithm.value == "Hill Climbing"
-        variant_text = (
-            f"variant: **{hill_climbing_variant.value}**  "
-            if algorithm.value == "Hill Climbing"
-            else ""
-        )
         status.content = (
             f"algorithm: **{algorithm.value}**  |  "
-            f"{variant_text}| "
             f"**{len(placements)} placed**  |  weight: **{weight:g} / "
             f"{problem.truck.maxCapacity:g}**  |  state: **{validity}**"
         )
@@ -204,29 +226,20 @@ def create_server(
 
     @run_search.on_click
     def _(_) -> None:
-        if algorithm.value != "Simulated Annealing":
-            status.content = (
-                f"**{algorithm.value}** is not implemented yet. "
-                "Choose **Simulated Annealing** to run local search."
-            )
-            return
-        result = simulated_annealing(
-            State.empty(problem),
-            max_iterations=500,
-            seed=0,
-        )
-        if not Evaluate.is_valid(result.state):
+        result = algorithms[algorithm.value](_make_state(problem, placements, orientations))
+        result_state = _state_from_result(result)
+        if result_state.problem is not problem:
+            raise ValueError("algorithm result belongs to a different problem")
+        if not Evaluate.is_valid(result_state):
             status.content = "Search returned an invalid state; layout was not changed."
             return
         placements.clear()
-        placements.update(_placements_from_state(result.state))
+        placements.update(_placements_from_state(result_state))
         orientations.clear()
-        orientations.update(_orientations_from_state(result.state))
-        status.content = (
-            f"Simulated annealing completed: **value={result.state.value}**, "
-            f"**iterations={result.iterations}**, "
-            f"**{len(placements)} packages placed**."
-        )
+        orientations.update(_orientations_from_state(result_state))
+        details = _result_details(result)
+        suffix = f": {details}" if details else ""
+        status.content = f"{algorithm.value} completed{suffix}."
         refresh()
 
     @remove_all.on_click
@@ -243,14 +256,15 @@ def create_server(
         refresh()
 
     algorithm.on_update(lambda _: refresh())
-    hill_climbing_variant.on_update(lambda _: refresh())
 
     refresh()
     return server
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Visualize packages being loaded into a truck.")
+    parser = argparse.ArgumentParser(
+        description="Visualize packages being loaded into a truck."
+    )
     parser.add_argument(
         "json_file",
         type=Path,
@@ -267,21 +281,28 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--port", type=int, default=8080)
     args = parser.parse_args()
+
     problem = json_to_problem(args.json_file)
     state = State.empty(problem)
     if args.simulate:
-        result = simulated_annealing(
+        state = simulated_annealing(
             state,
             max_iterations=args.iterations,
             seed=args.seed,
-        )
-        state = result.state
-        print(
-            f"Simulated annealing: value={state.value}, "
-            f"iterations={result.iterations}, "
-            f"accepted_moves={result.accepted_moves}"
-        )
-    create_server(problem, state, port=args.port)
+        ).state
+
+    create_server(
+        problem,
+        state,
+        port=args.port,
+        algorithms={
+            "Simulated Annealing": lambda current_state: simulated_annealing(
+                current_state,
+                max_iterations=args.iterations,
+                seed=args.seed,
+            )
+        },
+    )
     while True:
         time.sleep(1.0)
 
