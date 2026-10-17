@@ -117,26 +117,48 @@ def _state_from_result(result: Any) -> State:
 
 
 def _result_details(result: Any) -> str:
-    details = []
     if isinstance(result, State):
-        details.append(f"value={result.value}")
-    elif hasattr(result, "__dataclass_fields__"):
-        result_state = getattr(result, "state", None)
-        if isinstance(result_state, State):
-            details.append(f"value={result_state.value}")
-        details.extend(
-            f"{name}={getattr(result, name)}"
-            for name in result.__dataclass_fields__
-            if name not in {"state", "initial_state", "value_history"}
-        )
+        values: dict[str, Any] = {"value": result.value}
     elif isinstance(result, Mapping):
-        details.extend(
-            f"{key}={value}"
-            for key, value in result.items()
-            if key not in {"state", "initial_state", "value_history"}
-        )
+        values = dict(result)
+    elif hasattr(result, "__dataclass_fields__"):
+        values = {
+            name: getattr(result, name)
+            for name in result.__dataclass_fields__
+        }
+    else:
+        return ""
 
-    return ", ".join(details)
+    result_state = values.pop("state", None)
+    if isinstance(result_state, State):
+        values["value"] = result_state.value
+    values.pop("initial_state", None)
+    values.pop("value_history", None)
+    metrics = values.pop("metrics", {})
+
+    labels = {
+        "value": "value",
+        "iterations": "iterations",
+        "duration_seconds": "duration",
+        "termination_reason": "termination",
+        "neighbor_states_evaluated": "neighbors evaluated",
+        "accepted_moves": "accepted moves",
+    }
+    details = []
+    for name, value in values.items():
+        label = labels.get(name, name.replace("_", " "))
+        if name == "duration_seconds" and isinstance(value, (int, float)):
+            value = f"{value:.2f} s"
+        details.append(f"- {label}: {value}")
+
+    if isinstance(metrics, Mapping):
+        for name, value in metrics.items():
+            label = labels.get(name, name.replace("_", " "))
+            if name == "termination_reason":
+                value = value.replace("_", " ")
+            details.append(f"- {label}: {value}")
+
+    return "\n".join(details)
 
 
 def create_server(
@@ -217,10 +239,22 @@ def create_server(
         )
         run_search = server.gui.add_button("Run local search", color="green")
         remove_all = server.gui.add_button("Remove all packages", color="red")
-        frame_scene_button = server.gui.add_button("Frame scene")
+        frame_scene_button = server.gui.add_button("Reset camera view")
 
-    status = server.gui.add_markdown("Choose an algorithm and run local search.")
-    notification = server.gui.add_markdown("")
+    with server.gui.add_folder("State summary"):
+        status = server.gui.add_markdown("")
+    with server.gui.add_folder("Search result"):
+        search_result = server.gui.add_markdown("")
+    with server.gui.add_folder("Logs"):
+        log_output = server.gui.add_markdown("")
+
+    log_entries: list[str] = []
+
+    def add_log(message: str) -> None:
+        log_entries.append(message)
+        log_output.content = "\n".join(
+            f"- {entry}" for entry in reversed(log_entries[-8:])
+        )
 
     def package_position(package_id: str) -> tuple[float, float, float]:
         package = problem.get_package(package_id)
@@ -283,9 +317,11 @@ def create_server(
         weight = sum(problem.get_package(package_id).weight for package_id in placements)
         validity = "valid" if Evaluate.is_valid(state) else "invalid"
         status.content = (
-            f"algorithm: **{algorithm.value}**  |  "
-            f"**{len(placements)} placed**  |  weight: **{weight:g} / "
-            f"{problem.truck.maxCapacity:g}**  |  state: **{validity}**"
+
+            f"- algorithm: {algorithm.value.lower()}\n"
+            f"- packages placed: {len(placements)} / {len(package_ids)}\n"
+            f"- weight: {weight:g} / {problem.truck.maxCapacity:g}\n"
+            f"- state: {validity}"
         )
 
     def animate_placements(
@@ -354,7 +390,7 @@ def create_server(
         try:
             new_problem = json_to_problem(path)
         except (OSError, TypeError, ValueError, KeyError) as err:
-            notification.content = f"**Could not load {path.name}:** {err}"
+            add_log(f"Could not load {path.name}: {err}")
             return
 
         for handle in handles.values():
@@ -377,9 +413,10 @@ def create_server(
         }
         truck_handle, floor_handle = add_truck_scene()
         add_package_handles()
+        search_result.content = ""
         refresh()
         frame_camera()
-        notification.content = f"**Loaded {path.name}.**"
+        add_log(f"Loaded {path.name}.")
 
     add_package_handles()
 
@@ -405,8 +442,9 @@ def create_server(
         if rstate.problem is not problem:
             raise ValueError("algorithm result belongs to a different problem")
         if not Evaluate.is_valid(rstate):
-            notification.content = (
-                f"**{algorithm.value} failed:** the search returned an invalid placement."
+            search_result.content = (
+                f"- algorithm: {algorithm.value.lower()}\n"
+                "- state: invalid"
             )
             return
         # Replay final placements one by one; keep disabled for now.
@@ -420,8 +458,10 @@ def create_server(
         orientations.update(_orientations_from_state(rstate))
         refresh()
         details = _result_details(result)
-        suffix = f": {details}" if details else ""
-        notification.content = f"**Placement completed** - {algorithm.value}{suffix}."
+        search_result.content = (
+            f"- algorithm: {algorithm.value}\n"
+            f"{details}"
+        )
 
     @remove_all.on_click
     def _(_) -> None:
@@ -433,7 +473,8 @@ def create_server(
                 for package_id, package in problem.packages.items()
             }
         )
-        notification.content = "**All packages removed.** The truck is in a valid empty state."
+        search_result.content = ""
+        add_log("Truck reset; all packages removed.")
         refresh()
 
     algorithm.on_update(lambda _: refresh())
