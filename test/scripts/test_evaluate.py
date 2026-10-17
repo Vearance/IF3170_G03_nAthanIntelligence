@@ -1,19 +1,17 @@
-import unittest
 import sys
+import unittest
 from pathlib import Path
-
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from src.models.package import Package
 from src.models.problem import Problem
-from src.models.state import State
+from src.models.state import Grid, State
 from src.models.truck import Truck
 from src.models.types.dims import Dimensions
 from src.models.types.orientation import Orientation
 from src.utils.evaluate import Evaluate
 from src.utils.parser import json_to_problem
-
 
 ORIENTATION = Orientation(w="x", l="y", h="z")
 
@@ -41,13 +39,16 @@ def make_state(
     placements: dict[str, tuple[int, int, int]],
     *,
     capacity: int = 50,
-    truck_dimensions: Dimensions = Dimensions(w=4, l=4, h=4),
+    truck_dimensions: Dimensions | None = None,
 ) -> State:
+    if truck_dimensions is None:
+        truck_dimensions = Dimensions(w=4, l=4, h=4)
+
     problem = Problem(
         packages={package.id: package for package in packages},
         truck=Truck(dimensions=truck_dimensions, maxCapacity=capacity),
     )
-    grid = [
+    grid: Grid = [
         [[None for _ in range(truck_dimensions.w)] for _ in range(truck_dimensions.l)]
         for _ in range(truck_dimensions.h)
     ]
@@ -58,16 +59,13 @@ def make_state(
                 for x in range(x_start, x_start + package.dimensions.w):
                     if z < len(grid) and y < len(grid[z]) and x < len(grid[z][y]):
                         grid[z][y][x] = package_id
-                    else:
-                        # Keep the out-of-bounds placement visible to the evaluator.
-                        while len(grid) <= z:
-                            grid.append([])
-                        while len(grid[z]) <= y:
-                            grid[z].append([])
-                        while len(grid[z][y]) <= x:
-                            grid[z][y].append(None)
-                        grid[z][y][x] = package_id
-    return State(problem, grid, {}, set(), 0)
+    pkg_orientation = {
+        package_id: package.orientation
+        for package_id, package in problem.packages.items()
+    }
+    package_ids_in_grid = {package_id for layer in grid for row in layer for package_id in row if package_id is not None}
+    out_pkg = set(problem.packages) - package_ids_in_grid
+    return State(problem, grid, pkg_orientation, out_pkg, 0)
 
 
 def make_parsed_state(problem, package_id: str) -> State:
@@ -81,7 +79,7 @@ def make_parsed_state(problem, package_id: str) -> State:
             ("h", package.orientation.h),
         )
     }
-    grid = [
+    grid: Grid = [
         [[None for _ in range(truck_dimensions.w)] for _ in range(truck_dimensions.l)]
         for _ in range(truck_dimensions.h)
     ]
@@ -89,7 +87,12 @@ def make_parsed_state(problem, package_id: str) -> State:
         for y in range(dimensions_by_axis["y"]):
             for x in range(dimensions_by_axis["x"]):
                 grid[z][y][x] = package_id
-    return State(problem, grid, {}, set(), 0)
+    pkg_orientation = {
+        current_package_id: current_package.orientation
+        for current_package_id, current_package in problem.packages.items()
+    }
+    out_pkg = set(problem.packages) - {package_id}
+    return State(problem, grid, pkg_orientation, out_pkg, 0)
 
 
 class EvaluateTests(unittest.TestCase):
