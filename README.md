@@ -11,7 +11,7 @@ uv sync
 # Try visualizer
 uv run vis
 # or
-uv run vis test/input/test-4.json
+uv run vis test-4
 
 # Tambahkan dependency
 uv add <nama-package>

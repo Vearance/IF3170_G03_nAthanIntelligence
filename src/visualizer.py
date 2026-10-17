@@ -440,6 +440,24 @@ def create_server(
     return server
 
 
+def _resolve_problem_file(json_file: Path, input_directory: Path) -> Path:
+    json_file = json_file.expanduser()
+    if json_file.is_file():
+        return json_file.resolve()
+
+    if json_file.parent == Path("."):
+        file_name = (
+            json_file.name
+            if json_file.suffix.lower() == ".json"
+            else f"{json_file.name}.json"
+        )
+        input_path = input_directory / file_name
+        if input_path.is_file():
+            return input_path.resolve()
+
+    raise FileNotFoundError(f"problem JSON tidak ditemukan: {json_file}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Visualize packages being loaded into a truck."
@@ -449,7 +467,7 @@ def main() -> None:
         type=Path,
         nargs="?",
         default=Path("test/input/test-1.json"),
-        help="problem JSON file (default: test/input/test-1.json)",
+        help="filename in test/input",
     )
     parser.add_argument(
         "--simulate",
@@ -471,7 +489,7 @@ def main() -> None:
         path.name: path.resolve()
         for path in sorted(input_directory.glob("*.json"))
     }
-    selected_path = args.json_file.expanduser().resolve()
+    selected_path = _resolve_problem_file(args.json_file, input_directory)
     selected_problem = next(
         (
             name
