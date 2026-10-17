@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import viser
 
+from src.algo.genetic import genetic_algorithm
 from src.algo.hill_climb import steepest_ascent_hill_climbing
 from src.algo.simulated_annealing import simulated_annealing
 from src.models.state import Grid, State
@@ -537,6 +538,8 @@ def main() -> None:
                     on_iteration=on_iteration,
                 )
             ),
+            # TODO: add genetic algorithm args
+            # "Genetic Algorithm":  
         },
     )
     while True:
