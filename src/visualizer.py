@@ -1,5 +1,6 @@
 import argparse
 import colorsys
+import inspect
 import sys
 import time
 from collections.abc import Callable, Mapping
@@ -209,6 +210,10 @@ def create_server(
             "Algorithm",
             tuple(algorithms),
         )
+        visualize_iterations = server.gui.add_checkbox(
+            "Visualize each iteration",
+            initial_value=False,
+        )
         run_search = server.gui.add_button("Run local search", color="green")
         remove_all = server.gui.add_button("Remove all packages", color="red")
         frame_scene_button = server.gui.add_button("Frame scene")
@@ -389,15 +394,12 @@ def create_server(
     @run_search.on_click
     def _(_) -> None:
         runner = algorithms[algorithm.value]
-        # parameters = inspect.signature(runner).parameters
-        # if "on_iteration" in parameters:
-        #     result = runner(
-        #         _make_state(problem, placements, orientations),
-        #         on_iteration=animate_iteration,
-        #     )
-        # else:
-        #     result = runner(_make_state(problem, placements, orientations))
-        result = runner(_make_state(problem, placements, orientations))
+        parameters = inspect.signature(runner).parameters
+        initial_state = _make_state(problem, placements, orientations)
+        if "on_iteration" in parameters and visualize_iterations.value:
+            result = runner(initial_state, on_iteration=animate_iteration)
+        else:
+            result = runner(initial_state)
         rstate = _state_from_result(result)
         if rstate.problem is not problem:
             raise ValueError("algorithm result belongs to a different problem")

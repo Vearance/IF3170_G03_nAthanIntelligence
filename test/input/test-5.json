@@ -1,0 +1,29 @@
+{
+  "truck": {
+    "dimensions": {
+      "w": 1,
+      "l": 1,
+      "h": 1
+    },
+    "maxCapacity": 10
+  },
+  "packages": [
+    {
+      "id": "P501",
+      "dimensions": {
+        "w": 2,
+        "l": 2,
+        "h": 2
+      },
+      "orientation": {
+        "w": "x",
+        "l": "y",
+        "h": "z"
+      },
+      "value": 100,
+      "weight": 1,
+      "isFragile": false,
+      "eta": 1
+    }
+  ]
+}
