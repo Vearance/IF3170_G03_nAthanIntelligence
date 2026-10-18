@@ -243,6 +243,20 @@ def create_server(
             step=1,
             visible=algorithm.value == "Simulated Annealing",
         )
+        ga_population = server.gui.add_number(
+            "Population size",
+            initial_value=50,
+            min=2,
+            step=1,
+            visible=algorithm.value == "Genetic Algorithm",
+        )
+        ga_iterations = server.gui.add_number(
+            "Generations",
+            initial_value=100,
+            min=0,
+            step=1,
+            visible=algorithm.value == "Genetic Algorithm",
+        )
         visualize_iterations = server.gui.add_checkbox(
             "Visualize each iteration",
             initial_value=False,
@@ -446,6 +460,9 @@ def create_server(
         runner_kwargs = {}
         if algorithm.value == "Simulated Annealing":
             runner_kwargs["max_iterations"] = int(sa_iterations.value)
+        elif algorithm.value == "Genetic Algorithm":
+            runner_kwargs["population_size"] = int(ga_population.value)
+            runner_kwargs["max_iterations"] = int(ga_iterations.value)
         if "on_iteration" in parameters and visualize_iterations.value:
             runner_kwargs["on_iteration"] = animate_iteration
         result = runner(initial_state, **runner_kwargs)
@@ -504,6 +521,8 @@ def create_server(
 
     def update_algorithm(_) -> None:
         sa_iterations.visible = algorithm.value == "Simulated Annealing"
+        ga_population.visible = algorithm.value == "Genetic Algorithm"
+        ga_iterations.visible = algorithm.value == "Genetic Algorithm"
         refresh()
 
     algorithm.on_update(update_algorithm)
@@ -618,8 +637,15 @@ def main() -> None:
                     on_iteration=on_iteration,
                 )
             ),
-            # TODO: add genetic algorithm args
-            # "Genetic Algorithm":  
+            "Genetic Algorithm": lambda current_state, population_size=50, max_iterations=100, on_iteration=None: (
+                genetic_algorithm(
+                    current_state,
+                    population_size=population_size,
+                    max_iterations=max_iterations,
+                    seed=args.seed,
+                    on_iteration=on_iteration,
+                )
+            ),
         },
     )
     while True:
