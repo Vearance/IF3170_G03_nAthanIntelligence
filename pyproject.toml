@@ -5,13 +5,14 @@ description = "Tugas Besar 1 AI"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "matplotlib>=3.9",
     "ruff>=0.17.1",
     "viser>=1.1.1",
 ]
 
 [project.scripts]
-# hello-world = "hello_world:main" --> ganti jadi test scripts
-vis = "src.visualizer:main"
+main = "src.main:main"
+vis = "src.main:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]

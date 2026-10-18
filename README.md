@@ -8,10 +8,10 @@ Repo ini menggunakan [uv](https://docs.astral.sh/uv/) untuk mengelola environmen
 # Install/sinkronisasi dependency
 uv sync
 
-# Try visualizer
-uv run vis
-# or
-uv run vis test-4
+# Jalankan aplikasi
+uv run main
+# Pilih dataset
+uv run main test-4
 
 # Tambahkan dependency
 uv add <nama-package>
