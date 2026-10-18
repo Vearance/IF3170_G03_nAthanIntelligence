@@ -13,6 +13,20 @@ uv run vis
 # or
 uv run vis test-4
 
+# Run local search and write output/{input}_{algorithm}_state.json
+# plus output/{input}_{algorithm}_details.txt
+uv run solve
+uv run solve test-4 --algorithm hill-climbing
+uv run solve test-4 --algorithm simulated-annealing --iterations 1000 --seed 42
+
+# Use a different output directory
+uv run solve test-4 --output-dir output/experiments
+```
+
+`json_file` accepts an existing path or a filename from `test/input` (with or
+without the `.json` suffix), matching `uv run vis`.
+
+```bash
 # Tambahkan dependency
 uv add <nama-package>
 ```
