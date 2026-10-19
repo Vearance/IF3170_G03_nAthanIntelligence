@@ -17,6 +17,8 @@ from src.utils.parser import json_to_problem, resolve_problem_file
 from src.utils.random_state import random_initial_state
 from src.utils.snapshot import write_snapshot
 
+from src.utils.plotting import create_search_plots
+
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_INPUT_DIRECTORY = REPOSITORY_ROOT / "test" / "input"
 DEFAULT_OUTPUT_DIRECTORY = REPOSITORY_ROOT / "output"
@@ -231,6 +233,14 @@ def main(argv: Sequence[str] | None = None) -> None:
     print(f"snapshot JSON: {snapshot_path}")
     print(f"details TXT: {details_path}")
     print(f"final value: {result.state.value}")
+
+    for suffix, figure in zip(
+        ("objective", "acceptance"), create_search_plots(result, args.algorithm)
+    ):
+        plot_path = output_directory / f"{snapshot_path.stem}_{suffix}.png"
+        figure.savefig(plot_path)
+        figure.clear()
+        print(f"{suffix} plot: {plot_path}")
 
 
 if __name__ == "__main__":

@@ -151,6 +151,7 @@ def _result_details(result: Any) -> str:
         "termination_reason": "termination",
         "neighbor_states_evaluated": "neighbors evaluated",
         "accepted_moves": "accepted moves",
+        "stuck_frequency": "stuck count",
     }
     details = []
     for name, value in values.items():
@@ -161,9 +162,9 @@ def _result_details(result: Any) -> str:
 
     if isinstance(metrics, Mapping):
         for name, value in metrics.items():
+            if name not in {"population_size", "accepted_moves", "stuck_frequency"}:
+                continue
             label = labels.get(name, name.replace("_", " "))
-            if name == "termination_reason":
-                value = value.replace("_", " ")
             details.append(f"- {label}: {value}")
 
     return "\n".join(details)

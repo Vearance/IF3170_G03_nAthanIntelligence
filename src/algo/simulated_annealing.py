@@ -40,25 +40,37 @@ def simulated_annealing(
         current = State.empty(initial_state.problem)
     initial = current.copy()
     best = current.copy()
-    value_history = [best.value]
+    value_history = [current.value]
     temperature = initial_temperature
     accepted_moves = 0
     iterations = 0
+    acceptance_probability_history: list[float | None] = []
+    stuck_frequency = 0
 
     while iterations < max_iterations and temperature > minimum_temperature:
         candidate = _random_neighbour(current, rng)
+        probability = None
+        state_changed = False
         if candidate is not None:
             delta = candidate.value - current.value
-            if delta >= 0 or rng.random() < math.exp(delta / temperature):
+            probability = 1.0 if delta >= 0 else math.exp(delta / temperature)
+            if delta >= 0 or rng.random() < probability:
+                state_changed = candidate != current
                 current = candidate
                 accepted_moves += 1
                 if current.value > best.value:
                     best = current.copy()
 
+        # satu iterasi tanpa perubahan state dihitung satu kali stuck
+        if not state_changed:
+            stuck_frequency += 1
+
+        acceptance_probability_history.append(probability)
+        
         # sampling gagal tetap dihitung satu iterasi dan temperatur tetap turun
         temperature *= cooling_rate
         iterations += 1
-        value_history.append(best.value)
+        value_history.append(current.value)
         if on_iteration is not None:
             on_iteration(current.copy(), iterations)
 
@@ -68,7 +80,11 @@ def simulated_annealing(
         value_history=value_history,
         iterations=iterations,
         duration_seconds=perf_counter() - started_at,
-        metrics={"accepted_moves": accepted_moves},
+        metrics={
+            "accepted_moves": accepted_moves,
+            "acceptance_probability_history": acceptance_probability_history,
+            "stuck_frequency": stuck_frequency,
+        },
     )
 
 def _random_neighbour(state: State, rng: random.Random) -> State | None:
