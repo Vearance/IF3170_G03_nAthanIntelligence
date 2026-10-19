@@ -14,6 +14,7 @@ dependencies = [
 # hello-world = "hello_world:main" --> ganti jadi test scripts
 solve = "src.main:main"
 vis = "src.visualizer:main"
+vis-state = "src.visualizer:state_main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]

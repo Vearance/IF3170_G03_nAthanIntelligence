@@ -11,6 +11,7 @@ from typing import Any
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_INPUT_DIRECTORY = REPOSITORY_ROOT / "test" / "input"
+DEFAULT_OUTPUT_DIRECTORY = REPOSITORY_ROOT / "output"
 DEFAULT_INPUT_FILE = Path("test/input/test-1.json")
 
 sys.path.insert(0, str(REPOSITORY_ROOT))
@@ -25,6 +26,7 @@ from src.models.types.orientation import Orientation
 from src.utils.evaluate import Evaluate
 from src.utils.parser import json_to_problem, resolve_problem_file
 from src.utils.random_state import random_initial_state
+from src.utils.snapshot import read_snapshot, resolve_snapshot_file
 
 Algorithm = Callable[..., Any]
 
@@ -552,6 +554,198 @@ def create_server(
         run_selected_algorithm()
     return server
 
+
+# Snapshot code
+def create_snapshot_server(
+    initial_state: State,
+    final_state: State,
+    *,
+    algorithm: str,
+    port: int = 8080,
+):
+    if initial_state.problem is not final_state.problem:
+        raise ValueError("initial dan final snapshot harus memakai problem yang sama")
+
+    problem = initial_state.problem
+    truck = problem.truck.dimensions
+    package_ids = tuple(problem.packages)
+    states = {
+        "Initial State": initial_state,
+        "Final State": final_state,
+    }
+    selected_state = "Initial State"
+    placements = _placements_from_state(initial_state)
+    orientations = _orientations_from_state(initial_state)
+    handles = {}
+    colors = {
+        package_id: _color(index, len(package_ids))
+        for index, package_id in enumerate(package_ids)
+    }
+
+    server = viser.ViserServer(port=port)
+    server.scene.add_box(
+        "/truck",
+        dimensions=(truck.w, truck.l, truck.h),
+        position=(truck.w / 2, truck.l / 2, truck.h / 2),
+        color=(100, 116, 139),
+        opacity=0.08,
+        wireframe=True,
+    )
+    server.scene.add_grid(
+        "/floor",
+        width=float(truck.w),
+        height=float(truck.l),
+        plane="xy",
+        cell_size=1.0,
+        position=(truck.w / 2, truck.l / 2, 0.0),
+    )
+
+    with server.gui.add_folder("Snapshot"):
+        state_selector = server.gui.add_dropdown(
+            "Displayed state",
+            tuple(states),
+            initial_value=selected_state,
+        )
+    with server.gui.add_folder("State summary"):
+        status = server.gui.add_markdown("")
+
+    def package_position(package_id: str) -> tuple[float, float, float]:
+        package = problem.get_package(package_id)
+        width, length, height = _axis_dimensions(
+            package,
+            orientations[package_id],
+        )
+        if package_id in placements:
+            x, y, z = placements[package_id]
+            return x + width / 2, y + length / 2, z + height / 2
+
+        index = package_ids.index(package_id)
+        return (
+            truck.w + 2.0 + (index % 4) * 4.0,
+            (index // 4) * 4.0 + 2.0,
+            height / 2,
+        )
+
+    def frame_camera() -> None:
+        minimum = [0.0, 0.0, 0.0]
+        maximum = [float(truck.w), float(truck.l), float(truck.h)]
+        for package_id in package_ids:
+            center = package_position(package_id)
+            dimensions = _axis_dimensions(
+                problem.get_package(package_id),
+                orientations[package_id],
+            )
+            for axis in range(3):
+                minimum[axis] = min(
+                    minimum[axis], center[axis] - dimensions[axis] / 2
+                )
+                maximum[axis] = max(
+                    maximum[axis], center[axis] + dimensions[axis] / 2
+                )
+
+        look_at: tuple[float, float, float] = (
+            (minimum[0] + maximum[0]) / 2,
+            (minimum[1] + maximum[1]) / 2,
+            (minimum[2] + maximum[2]) / 2,
+        )
+        distance = max(
+            maximum[axis] - minimum[axis]
+            for axis in range(3)
+        )
+        camera_position = (
+            look_at[0] + distance,
+            look_at[1] - distance,
+            look_at[2] + distance * 0.75,
+        )
+        server.initial_camera.position = camera_position
+        server.initial_camera.look_at = look_at
+        server.initial_camera.up = (0.0, 0.0, 1.0)
+
+        for client in server.get_clients().values():
+            with client.atomic():
+                client.camera.position = camera_position
+                client.camera.look_at = look_at
+
+    def refresh(state_name: str) -> None:
+        state = states[state_name]
+        placements.clear()
+        placements.update(_placements_from_state(state))
+        orientations.clear()
+        orientations.update(_orientations_from_state(state))
+
+        for package_id, handle in handles.items():
+            package = problem.get_package(package_id)
+            handle.dimensions = _axis_dimensions(
+                package,
+                orientations[package_id],
+            )
+            handle.position = package_position(package_id)
+            handle.color = colors[package_id]
+            handle.opacity = 0.82 if package_id in placements else 0.35
+
+        weight = sum(
+            problem.get_package(package_id).weight
+            for package_id in placements
+        )
+        status.content = (
+            f"- algorithm: {algorithm}\n"
+            f"- displayed state: {state_name}\n"
+            f"- value: {state.value}\n"
+            f"- packages placed: {len(placements)} / {len(package_ids)}\n"
+            f"- weight: {weight:g} / {problem.truck.maxCapacity:g}\n"
+            f"- state: {'valid' if Evaluate.is_valid(state) else 'invalid'}"
+        )
+
+    for package_id in package_ids:
+        package = problem.get_package(package_id)
+        handles[package_id] = server.scene.add_box(
+            f"/packages/{package_id}",
+            dimensions=_axis_dimensions(package, orientations[package_id]),
+            position=package_position(package_id),
+            color=colors[package_id],
+            opacity=0.55,
+        )
+
+    @state_selector.on_update
+    def _(_) -> None:
+        refresh(state_selector.value)
+        frame_camera()
+
+    refresh(selected_state)
+    frame_camera()
+    return server
+
+
+def state_main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Visualize initial and final states from a snapshot."
+    )
+    parser.add_argument(
+        "snapshot_file",
+        type=Path,
+        help="snapshot filename in output or path to a snapshot JSON",
+    )
+    parser.add_argument("--port", type=int, default=8080)
+    args = parser.parse_args()
+
+    try:
+        snapshot_path = resolve_snapshot_file(
+            args.snapshot_file,
+            DEFAULT_OUTPUT_DIRECTORY,
+        )
+        algorithm, initial_state, final_state = read_snapshot(snapshot_path)
+        create_snapshot_server(
+            initial_state,
+            final_state,
+            algorithm=algorithm,
+            port=args.port,
+        )
+    except (OSError, TypeError, ValueError, KeyError) as err:
+        parser.error(str(err))
+
+    print(f"snapshot: {snapshot_path}")
+    while True:
+        time.sleep(1.0)
 
 
 def main() -> None:

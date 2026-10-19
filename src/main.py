@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 from collections.abc import Sequence
 from pathlib import Path
 from random import Random
@@ -10,18 +9,23 @@ from typing import Any
 from src.algo.genetic import genetic_algorithm
 from src.algo.hill_climb import steepest_ascent_hill_climbing
 from src.algo.simulated_annealing import simulated_annealing
-from src.models.package import Package
 from src.models.result import Result
 from src.models.state import State
 from src.models.types.orientation import Orientation
 from src.utils.evaluate import Evaluate
 from src.utils.parser import json_to_problem, resolve_problem_file
 from src.utils.random_state import random_initial_state
+from src.utils.snapshot import write_snapshot
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_INPUT_DIRECTORY = REPOSITORY_ROOT / "test" / "input"
 DEFAULT_OUTPUT_DIRECTORY = REPOSITORY_ROOT / "output"
 DEFAULT_INPUT_FILE = Path("test/input/test-1.json")
+SNAPSHOT_ALIASES = {
+    "hill-climbing": "hc",
+    "simulated-annealing": "sa",
+    "genetic-algorithm": "ga",
+}
 
 
 def _non_negative_int(value: str) -> int:
@@ -33,20 +37,6 @@ def _non_negative_int(value: str) -> int:
         raise argparse.ArgumentTypeError("tidak boleh negatif")
     return parsed
 
-
-def _axis_dimensions(
-    package: Package, orientation: Orientation
-) -> tuple[int, int, int]:
-    dimensions_by_axis = {
-        orientation.w: package.dimensions.w,
-        orientation.l: package.dimensions.l,
-        orientation.h: package.dimensions.h,
-    }
-    return (
-        dimensions_by_axis["x"],
-        dimensions_by_axis["y"],
-        dimensions_by_axis["z"],
-    )
 
 
 def _cells_by_package(state: State) -> dict[str, list[tuple[int, int, int]]]:
@@ -63,68 +53,6 @@ def _orientation_to_dict(orientation: Orientation) -> dict[str, str]:
     return {"w": orientation.w, "l": orientation.l, "h": orientation.h}
 
 
-def _dimensions_to_dict(
-    dimensions: tuple[int, int, int],
-) -> dict[str, int]:
-    width, length, height = dimensions
-    return {"w": width, "l": length, "h": height}
-
-
-def _state_to_dict(state: State) -> dict[str, Any]:
-    cells_by_package = _cells_by_package(state)
-    package_data: dict[str, Any] = {}
-
-    for package_id, package in state.problem.packages.items():
-        orientation = state.pkg_orientation[package_id]
-        cells = cells_by_package.get(package_id, [])
-        inside = bool(cells)
-        position = None
-        if inside:
-            position = {
-                "x": min(cell[0] for cell in cells),
-                "y": min(cell[1] for cell in cells),
-                "z": min(cell[2] for cell in cells),
-            }
-
-        package_data[package_id] = {
-            "inside": inside,
-            "position": position,
-            "dimensions": {
-                "w": package.dimensions.w,
-                "l": package.dimensions.l,
-                "h": package.dimensions.h,
-            },
-            "orientedDimensions": _dimensions_to_dict(
-                _axis_dimensions(package, orientation)
-            ),
-            "orientation": _orientation_to_dict(orientation),
-            "value": package.value,
-            "weight": package.weight,
-            "isFragile": package.isFragile,
-            "eta": package.eta,
-        }
-
-    truck = state.problem.truck
-    return {
-        "truck": {
-            "dimensions": {
-                "w": truck.dimensions.w,
-                "l": truck.dimensions.l,
-                "h": truck.dimensions.h,
-            },
-            "maxCapacity": truck.maxCapacity,
-        },
-        "value": state.value,
-        "valid": Evaluate.is_valid(state),
-        "totalWeight": sum(
-            state.problem.get_package(package_id).weight
-            for package_id in cells_by_package
-        ),
-        "placedPackages": sorted(cells_by_package),
-        "outsidePackages": sorted(state.out_pkg),
-        "packages": package_data,
-        "grid": state.grid,
-    }
 
 
 def _format_state_summary(state: State) -> list[str]:
@@ -288,21 +216,19 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     output_directory = args.output_dir.expanduser()
     output_directory.mkdir(parents=True, exist_ok=True)
-    algorithm_slug = args.algorithm.replace("-", "_")
-    output_stem = f"{input_path.stem}_{algorithm_slug}"
-    state_path = output_directory / f"{output_stem}_state.json"
-    details_path = output_directory / f"{output_stem}_details.txt"
-
-    state_path.write_text(
-        json.dumps(_state_to_dict(result.state), indent=2),
-        encoding="utf-8",
+    snapshot_alias = SNAPSHOT_ALIASES[args.algorithm]
+    details_path = output_directory / f"{input_path.stem}-{snapshot_alias}.txt"
+    snapshot_path = output_directory / (
+        f"{input_path.stem}-{snapshot_alias}.json"
     )
+
     details_path.write_text(
         _format_details(input_path, args.algorithm, result),
         encoding="utf-8",
     )
+    write_snapshot(snapshot_path, result, args.algorithm)
 
-    print(f"state JSON: {state_path}")
+    print(f"snapshot JSON: {snapshot_path}")
     print(f"details TXT: {details_path}")
     print(f"final value: {result.state.value}")
 
