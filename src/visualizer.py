@@ -253,6 +253,11 @@ def create_server(
             step=1,
             visible=algorithm.value == "Simulated Annealing",
         )
+        random_seed_input = server.gui.add_number(
+            "Random seed",
+            initial_value=random_seed if random_seed is not None else 0,
+            step=1,
+        )
         ga_population = server.gui.add_number(
             "Population size",
             initial_value=50,
@@ -466,12 +471,13 @@ def create_server(
     def run_selected_algorithm() -> None:
         runner = algorithms[algorithm.value]
         parameters = inspect.signature(runner).parameters
+        seed = int(random_seed_input.value)
         if algorithm.value in {
             "Steepest-Ascent Hill-Climbing",
             "Simulated Annealing",
             "Genetic Algorithm",
         }:
-            initial_state = random_initial_state(problem, Random(random_seed))
+            initial_state = random_initial_state(problem, Random(seed))
             placements.clear()
             placements.update(_placements_from_state(initial_state))
             orientations.clear()
@@ -482,9 +488,11 @@ def create_server(
         runner_kwargs = {}
         if algorithm.value == "Simulated Annealing":
             runner_kwargs["max_iterations"] = int(sa_iterations.value)
+            runner_kwargs["seed"] = seed
         elif algorithm.value == "Genetic Algorithm":
             runner_kwargs["population_size"] = int(ga_population.value)
             runner_kwargs["max_iterations"] = int(ga_iterations.value)
+            runner_kwargs["seed"] = seed
         if "on_iteration" in parameters and visualize_iterations.value:
             runner_kwargs["on_iteration"] = animate_iteration
         result = runner(initial_state, **runner_kwargs)
@@ -832,20 +840,20 @@ def main() -> None:
                     on_iteration=on_iteration,
                 )
             ),
-            "Simulated Annealing": lambda current_state, max_iterations=500, on_iteration=None: (
+            "Simulated Annealing": lambda current_state, max_iterations=500, seed=None, on_iteration=None: (
                 simulated_annealing(
                     current_state,
                     max_iterations=max_iterations,
-                    seed=args.seed,
+                    seed=seed,
                     on_iteration=on_iteration,
                 )
             ),
-            "Genetic Algorithm": lambda current_state, population_size=50, max_iterations=100, on_iteration=None: (
+            "Genetic Algorithm": lambda current_state, population_size=50, max_iterations=100, seed=None, on_iteration=None: (
                 genetic_algorithm(
                     current_state,
                     population_size=population_size,
                     max_iterations=max_iterations,
-                    seed=args.seed,
+                    seed=seed,
                     on_iteration=on_iteration,
                 )
             ),
