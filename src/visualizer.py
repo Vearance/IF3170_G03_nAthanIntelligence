@@ -6,6 +6,7 @@ import time
 from collections.abc import Callable, Mapping
 from dataclasses import replace
 from pathlib import Path
+from random import Random
 from typing import Any
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +24,7 @@ from src.models.state import Grid, State
 from src.models.types.orientation import Orientation
 from src.utils.evaluate import Evaluate
 from src.utils.parser import json_to_problem, resolve_problem_file
+from src.utils.random_state import random_initial_state
 
 Algorithm = Callable[..., Any]
 
@@ -175,6 +177,7 @@ def create_server(
     selected_problem: str | None = None,
     auto_run: bool = False,
     initial_sa_iterations: int = 500,
+    random_seed: int | None = None,
 ):
     algorithms = dict(algorithms or {})
     problem_files = dict(problem_files or {})
@@ -460,7 +463,19 @@ def create_server(
     def run_selected_algorithm() -> None:
         runner = algorithms[algorithm.value]
         parameters = inspect.signature(runner).parameters
-        initial_state = _make_state(problem, placements, orientations)
+        if algorithm.value in {
+            "Steepest-Ascent Hill-Climbing",
+            "Simulated Annealing",
+            "Genetic Algorithm",
+        }:
+            initial_state = random_initial_state(problem, Random(random_seed))
+            placements.clear()
+            placements.update(_placements_from_state(initial_state))
+            orientations.clear()
+            orientations.update(_orientations_from_state(initial_state))
+            refresh()
+        else:
+            initial_state = _make_state(problem, placements, orientations)
         runner_kwargs = {}
         if algorithm.value == "Simulated Annealing":
             runner_kwargs["max_iterations"] = int(sa_iterations.value)
@@ -564,7 +579,12 @@ def main() -> None:
             "auto-run Hill-Climbing on startup unless --simulate is used"
         ),
     )
-    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="optional random seed for reproducible runs",
+    )
     parser.add_argument("--port", type=int, default=8080)
     args = parser.parse_args()
 
@@ -590,7 +610,7 @@ def main() -> None:
     problem_files[selected_problem] = selected_path
 
     problem = json_to_problem(selected_path)
-    state = State.empty(problem)
+    state = random_initial_state(problem, Random(args.seed))
     simulated_annealing_iterations = (
         args.iterations if args.iterations is not None else 500
     )
@@ -609,6 +629,7 @@ def main() -> None:
         selected_problem=selected_problem,
         auto_run=args.iterations is not None and not args.simulate,
         initial_sa_iterations=simulated_annealing_iterations,
+        random_seed=args.seed,
         algorithms={
             "Steepest-Ascent Hill-Climbing": lambda current_state, on_iteration=None: (
                 steepest_ascent_hill_climbing(

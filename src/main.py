@@ -4,8 +4,10 @@ import argparse
 import json
 from collections.abc import Sequence
 from pathlib import Path
+from random import Random
 from typing import Any
 
+from src.algo.genetic import genetic_algorithm
 from src.algo.hill_climb import steepest_ascent_hill_climbing
 from src.algo.simulated_annealing import simulated_annealing
 from src.models.package import Package
@@ -14,6 +16,7 @@ from src.models.state import State
 from src.models.types.orientation import Orientation
 from src.utils.evaluate import Evaluate
 from src.utils.parser import json_to_problem, resolve_problem_file
+from src.utils.random_state import random_initial_state
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_INPUT_DIRECTORY = REPOSITORY_ROOT / "test" / "input"
@@ -183,9 +186,18 @@ def _format_details(
 
 
 def _run_algorithm(problem: Any, args: argparse.Namespace) -> Result:
-    initial_state = State.empty(problem)
+    initial_state = random_initial_state(problem, Random(args.seed))
+
     if args.algorithm == "hill-climbing":
         return steepest_ascent_hill_climbing(initial_state)
+
+    if args.algorithm == "genetic-algorithm":
+        return genetic_algorithm(
+            initial_state,
+            population_size=args.population_size,
+            max_iterations=args.iterations,
+            seed=args.seed,
+        )
 
     return simulated_annealing(
         initial_state,
@@ -210,7 +222,11 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--algorithm",
-        choices=("hill-climbing", "simulated-annealing"),
+        choices=(
+            "hill-climbing",
+            "simulated-annealing",
+            "genetic-algorithm",
+        ),
         default="hill-climbing",
         help="algorithm to run (default: hill-climbing)",
     )
@@ -218,7 +234,13 @@ def _build_parser() -> argparse.ArgumentParser:
         "--iterations",
         type=_non_negative_int,
         default=500,
-        help="maximum iterations for simulated annealing (default: 500)",
+        help="maximum iterations/generations (default: 500)",
+    )
+    parser.add_argument(
+        "--population-size",
+        type=_non_negative_int,
+        default=50,
+        help="population size for genetic algorithm (default: 50)",
     )
     parser.add_argument(
         "--initial-temperature",
@@ -241,8 +263,8 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--seed",
         type=int,
-        default=0,
-        help="random seed for simulated annealing (default: 0)",
+        default=None,
+        help="optional random seed for reproducible local-search runs",
     )
     parser.add_argument(
         "--output-dir",

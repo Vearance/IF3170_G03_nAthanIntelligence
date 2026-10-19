@@ -1,5 +1,7 @@
 from matplotlib.figure import Figure
+
 from src.models.result import Result
+
 
 def create_genetic_plot(result: Result, title: str = "Genetic Algorithm") -> Figure:
     mean_history = result.metrics.get("mean_value_history")

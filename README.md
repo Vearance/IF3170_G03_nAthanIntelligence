@@ -18,6 +18,7 @@ uv run vis test-4
 uv run solve
 uv run solve test-4 --algorithm hill-climbing
 uv run solve test-4 --algorithm simulated-annealing --iterations 1000 --seed 42
+uv run solve test-4 --algorithm genetic-algorithm --population-size 50 --iterations 100 --seed 42
 
 # Use a different output directory
 uv run solve test-4 --output-dir output/experiments
