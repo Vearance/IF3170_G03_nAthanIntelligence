@@ -9,7 +9,7 @@ def create_search_plots(result: Result, algorithm: str) -> list[Figure]:
     if algorithm in {"genetic-algorithm", "Genetic Algorithm"}:
         return [create_genetic_plot(result)]
     if algorithm in {"simulated-annealing", "Simulated Annealing"}:
-        figures = [create_objective_plot(result, "Simulated Annealing - Best Value")]
+        figures = [create_objective_plot(result, "Simulated Annealing - Current Value")]
         if "acceptance_probability_history" in result.metrics:
             figures.append(create_annealing_plot(result))
         return figures
