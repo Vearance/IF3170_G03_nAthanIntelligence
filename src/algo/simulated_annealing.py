@@ -47,16 +47,15 @@ def simulated_annealing(
 
     while iterations < max_iterations and temperature > minimum_temperature:
         candidate = _random_neighbour(current, rng)
-        if candidate is None:
-            break
+        if candidate is not None:
+            delta = candidate.value - current.value
+            if delta >= 0 or rng.random() < math.exp(delta / temperature):
+                current = candidate
+                accepted_moves += 1
+                if current.value > best.value:
+                    best = current.copy()
 
-        delta = candidate.value - current.value
-        if delta >= 0 or rng.random() < math.exp(delta / temperature):
-            current = candidate
-            accepted_moves += 1
-            if current.value > best.value:
-                best = current.copy()
-
+        # sampling gagal tetap dihitung satu iterasi dan temperatur tetap turun
         temperature *= cooling_rate
         iterations += 1
         value_history.append(best.value)
@@ -74,9 +73,12 @@ def simulated_annealing(
 
 def _random_neighbour(state: State, rng: random.Random) -> State | None:
     operations = ["place"] if state.out_pkg else []
+    package_ids = sorted(state.problem.packages)
     placed = sorted(state.package_ids_in_grid())
     if placed:
-        operations.extend(("remove", "rotate"))
+        operations.append("remove")
+    if package_ids:
+        operations.append("rotate")
     if not operations:
         return None
 
@@ -89,7 +91,7 @@ def _random_neighbour(state: State, rng: random.Random) -> State | None:
         else:
             candidate = try_rotate(
                 state,
-                rng.choice(placed),
+                rng.choice(package_ids),
                 rng.choice(("x", "y", "z")),
             )
         if candidate is not None:

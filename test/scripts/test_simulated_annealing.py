@@ -1,6 +1,7 @@
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
@@ -37,6 +38,44 @@ def make_problem() -> Problem:
 
 
 class SimulatedAnnealingTests(unittest.TestCase):
+    def test_failed_sampling_still_cools_and_records_iterations(self) -> None:
+        initial_state = State.empty(make_problem())
+        callbacks: list[int] = []
+
+        with patch(
+            "src.algo.simulated_annealing._random_neighbour", return_value=None
+        ):
+            result = simulated_annealing(
+                initial_state,
+                initial_temperature=8,
+                cooling_rate=0.5,
+                minimum_temperature=1,
+                max_iterations=10,
+                on_iteration=lambda state, iteration: callbacks.append(iteration),
+            )
+
+        self.assertEqual(result.iterations, 3)
+        self.assertEqual(result.value_history, [0, 0, 0, 0])
+        self.assertEqual(callbacks, [1, 2, 3])
+        self.assertEqual(result.metrics["accepted_moves"], 0)
+        self.assertEqual(result.state, initial_state)
+
+    def test_rotates_outside_package_before_placing_it(self) -> None:
+        problem = make_problem()
+        problem.packages = {"P1": problem.packages["P1"]}
+        problem.packages["P1"].dimensions = Dimensions(w=2, l=1, h=1)
+        problem.truck.dimensions = Dimensions(w=1, l=2, h=1)
+        initial_state = State.empty(problem)
+
+        result = simulated_annealing(
+            initial_state, max_iterations=100, seed=0
+        )
+
+        self.assertEqual(result.state.value, 6)
+        self.assertTrue(Evaluate.is_valid(result.state))
+        self.assertEqual(initial_state.out_pkg, {"P1"})
+        self.assertEqual(initial_state.pkg_orientation["P1"], Orientation("x", "y", "z"))
+
     def test_returns_valid_best_state_without_mutating_initial_state(self) -> None:
         initial_state = State.empty(make_problem())
 
