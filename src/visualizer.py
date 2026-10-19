@@ -8,17 +8,20 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_INPUT_DIRECTORY = REPOSITORY_ROOT / "test" / "input"
+DEFAULT_INPUT_FILE = Path("test/input/test-1.json")
+
+sys.path.insert(0, str(REPOSITORY_ROOT))
 
 import viser
 
-from src.algo.genetic import genetic_algorithm
 from src.algo.hill_climb import steepest_ascent_hill_climbing
 from src.algo.simulated_annealing import simulated_annealing
 from src.models.state import Grid, State
 from src.models.types.orientation import Orientation
 from src.utils.evaluate import Evaluate
-from src.utils.parser import json_to_problem
+from src.utils.parser import json_to_problem, resolve_problem_file
 
 Algorithm = Callable[..., Any]
 
@@ -534,23 +537,6 @@ def create_server(
     return server
 
 
-def _resolve_problem_file(json_file: Path, input_directory: Path) -> Path:
-    json_file = json_file.expanduser()
-    if json_file.is_file():
-        return json_file.resolve()
-
-    if json_file.parent == Path("."):
-        file_name = (
-            json_file.name
-            if json_file.suffix.lower() == ".json"
-            else f"{json_file.name}.json"
-        )
-        input_path = input_directory / file_name
-        if input_path.is_file():
-            return input_path.resolve()
-
-    raise FileNotFoundError(f"problem JSON tidak ditemukan: {json_file}")
-
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -560,7 +546,7 @@ def main() -> None:
         "json_file",
         type=Path,
         nargs="?",
-        default=Path("test/input/test-1.json"),
+        default=DEFAULT_INPUT_FILE,
         help="filename in test/input",
     )
     parser.add_argument(
@@ -581,12 +567,12 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=8080)
     args = parser.parse_args()
 
-    input_directory = Path(__file__).resolve().parents[1] / "test" / "input"
+    input_directory = DEFAULT_INPUT_DIRECTORY
     problem_files = {
         path.name: path.resolve()
         for path in sorted(input_directory.glob("*.json"))
     }
-    selected_path = _resolve_problem_file(args.json_file, input_directory)
+    selected_path = resolve_problem_file(args.json_file, input_directory)
     selected_problem = next(
         (
             name

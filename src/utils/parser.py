@@ -20,6 +20,21 @@ def load_problem(path: str | Path) -> Problem:
     return json_to_problem(path)
 
 
+def resolve_problem_file(json_file: str | Path, input_directory: str | Path) -> Path:
+    """Resolve a problem path using the same rules as the CLI visualizer."""
+    path = Path(json_file).expanduser()
+    if path.is_file():
+        return path.resolve()
+
+    if path.parent == Path("."):
+        file_name = path.name if path.suffix.lower() == ".json" else f"{path.name}.json"
+        input_path = Path(input_directory) / file_name
+        if input_path.is_file():
+            return input_path.resolve()
+
+    raise FileNotFoundError(f"problem JSON tidak ditemukan: {path}")
+
+
 def problem_to_dict(problem: Problem) -> dict[str, Any]:
     if not isinstance(problem, Problem):
         raise TypeError("problem harus berupa instance Problem")

@@ -11,8 +11,9 @@ dependencies = [
 ]
 
 [project.scripts]
-main = "src.main:main"
-vis = "src.main:main"
+# hello-world = "hello_world:main" --> ganti jadi test scripts
+solve = "src.main:main"
+vis = "src.visualizer:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
