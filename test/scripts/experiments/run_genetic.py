@@ -2,7 +2,6 @@ import argparse
 import csv
 import json
 import sys
-from dataclasses import asdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -13,18 +12,12 @@ from src.models.state import State
 from src.utils.evaluate import Evaluate
 from src.utils.parser import json_to_problem
 from src.utils.plotting import create_genetic_plot
+from src.utils.snapshot import snapshot_to_dict
 
 CONTROL_POPULATION = 20
 CONTROL_ITERATIONS = 30
 ITERATION_VARIATIONS = (10, 30, 50)
 POPULATION_VARIATIONS = (10, 20, 30)
-
-
-# func: menyimpan pemetaan lengkap state, termasuk paket di luar
-def _state_to_dict(state: State) -> dict:
-    data = asdict(state)
-    data["out_pkg"] = sorted(state.out_pkg)
-    return data
 
 
 # func: menjalankan dua kelompok eksperimen GA sesuai spek
@@ -81,9 +74,8 @@ def main() -> None:
                 }
                 filename = f"{args.name}_{group}_n{population}_g{iterations}_run{run}"
                 record = {
+                    **snapshot_to_dict(result, "genetic-algorithm"),
                     **summary,
-                    "initial_state": _state_to_dict(result.initial_state),
-                    "final_state": _state_to_dict(result.state),
                     "max_value_history": result.value_history,
                     "mean_value_history": result.metrics["mean_value_history"],
                     "metrics": result.metrics,
