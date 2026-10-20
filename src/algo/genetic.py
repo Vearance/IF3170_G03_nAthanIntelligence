@@ -117,7 +117,7 @@ def _select_parent(
     if not population:
         raise ValueError("population tidak boleh kosong")
 
-    # Fitness dicatat ulang untuk seluruh populasi sebelum seleksi generasi ini.
+    # fitness dicatat ulang untuk seluruh populasi sebelum seleksi generasi ini
     weights = [state.value for state in population]
     if sum(weights) == 0:
         return rng.choice(population)
