@@ -1,0 +1,160 @@
+Search Result
+===================================
+input: C:\Users\yips9\Documents\Kuliah\AI\IF3170_G03_nAthanIntelligence\test\input\test-4.json
+algorithm: hill-climbing-sideways
+iterations: 102
+duration_seconds: 16.164960
+packages_placed: 14 / 18
+final_value: 272
+final_state_valid: True
+
+parameters and metrics:
+- sideways_moves: 100
+- max_sideways_moves: 100
+
+initial state:
+value: 254
+- P401: position=(2, 1, 1), orientation={'w': 'x', 'l': 'y', 'h': 'z'}
+- P402: position=(2, 2, 0), orientation={'w': 'x', 'l': 'z', 'h': 'y'}
+- P403: position=(3, 3, 0), orientation={'w': 'x', 'l': 'z', 'h': 'y'}
+- P404: outside truck
+- P405: outside truck
+- P406: position=(0, 0, 0), orientation={'w': 'y', 'l': 'x', 'h': 'z'}
+- P407: position=(1, 2, 2), orientation={'w': 'y', 'l': 'z', 'h': 'x'}
+- P408: position=(0, 2, 0), orientation={'w': 'x', 'l': 'y', 'h': 'z'}
+- P409: outside truck
+- P410: outside truck
+- P411: position=(3, 1, 0), orientation={'w': 'y', 'l': 'z', 'h': 'x'}
+- P412: position=(3, 0, 0), orientation={'w': 'z', 'l': 'y', 'h': 'x'}
+- P413: position=(2, 3, 1), orientation={'w': 'y', 'l': 'x', 'h': 'z'}
+- P414: position=(1, 0, 0), orientation={'w': 'y', 'l': 'z', 'h': 'x'}
+- P415: position=(3, 0, 2), orientation={'w': 'x', 'l': 'y', 'h': 'z'}
+- P416: position=(0, 0, 2), orientation={'w': 'x', 'l': 'z', 'h': 'y'}
+- P417: outside truck
+- P418: position=(1, 1, 2), orientation={'w': 'z', 'l': 'x', 'h': 'y'}
+
+final state:
+value: 272
+- P401: position=(2, 3, 1), orientation={'w': 'x', 'l': 'z', 'h': 'y'}
+- P402: position=(1, 1, 2), orientation={'w': 'x', 'l': 'z', 'h': 'y'}
+- P403: position=(2, 0, 2), orientation={'w': 'z', 'l': 'x', 'h': 'y'}
+- P404: outside truck
+- P405: position=(3, 1, 2), orientation={'w': 'z', 'l': 'y', 'h': 'x'}
+- P406: position=(0, 0, 0), orientation={'w': 'y', 'l': 'x', 'h': 'z'}
+- P407: position=(1, 2, 2), orientation={'w': 'y', 'l': 'z', 'h': 'x'}
+- P408: position=(0, 2, 0), orientation={'w': 'x', 'l': 'y', 'h': 'z'}
+- P409: position=(0, 0, 2), orientation={'w': 'x', 'l': 'y', 'h': 'z'}
+- P410: outside truck
+- P411: position=(3, 2, 0), orientation={'w': 'y', 'l': 'x', 'h': 'z'}
+- P412: position=(3, 0, 0), orientation={'w': 'y', 'l': 'x', 'h': 'z'}
+- P413: position=(1, 0, 0), orientation={'w': 'y', 'l': 'z', 'h': 'x'}
+- P414: position=(2, 1, 1), orientation={'w': 'y', 'l': 'x', 'h': 'z'}
+- P415: position=(3, 3, 0), orientation={'w': 'y', 'l': 'z', 'h': 'x'}
+- P416: outside truck
+- P417: outside truck
+- P418: position=(2, 2, 0), orientation={'w': 'x', 'l': 'y', 'h': 'z'}
+
+objective history:
+- iteration 0: 254
+- iteration 1: 271
+- iteration 2: 272
+- iteration 3: 272
+- iteration 4: 272
+- iteration 5: 272
+- iteration 6: 272
+- iteration 7: 272
+- iteration 8: 272
+- iteration 9: 272
+- iteration 10: 272
+- iteration 11: 272
+- iteration 12: 272
+- iteration 13: 272
+- iteration 14: 272
+- iteration 15: 272
+- iteration 16: 272
+- iteration 17: 272
+- iteration 18: 272
+- iteration 19: 272
+- iteration 20: 272
+- iteration 21: 272
+- iteration 22: 272
+- iteration 23: 272
+- iteration 24: 272
+- iteration 25: 272
+- iteration 26: 272
+- iteration 27: 272
+- iteration 28: 272
+- iteration 29: 272
+- iteration 30: 272
+- iteration 31: 272
+- iteration 32: 272
+- iteration 33: 272
+- iteration 34: 272
+- iteration 35: 272
+- iteration 36: 272
+- iteration 37: 272
+- iteration 38: 272
+- iteration 39: 272
+- iteration 40: 272
+- iteration 41: 272
+- iteration 42: 272
+- iteration 43: 272
+- iteration 44: 272
+- iteration 45: 272
+- iteration 46: 272
+- iteration 47: 272
+- iteration 48: 272
+- iteration 49: 272
+- iteration 50: 272
+- iteration 51: 272
+- iteration 52: 272
+- iteration 53: 272
+- iteration 54: 272
+- iteration 55: 272
+- iteration 56: 272
+- iteration 57: 272
+- iteration 58: 272
+- iteration 59: 272
+- iteration 60: 272
+- iteration 61: 272
+- iteration 62: 272
+- iteration 63: 272
+- iteration 64: 272
+- iteration 65: 272
+- iteration 66: 272
+- iteration 67: 272
+- iteration 68: 272
+- iteration 69: 272
+- iteration 70: 272
+- iteration 71: 272
+- iteration 72: 272
+- iteration 73: 272
+- iteration 74: 272
+- iteration 75: 272
+- iteration 76: 272
+- iteration 77: 272
+- iteration 78: 272
+- iteration 79: 272
+- iteration 80: 272
+- iteration 81: 272
+- iteration 82: 272
+- iteration 83: 272
+- iteration 84: 272
+- iteration 85: 272
+- iteration 86: 272
+- iteration 87: 272
+- iteration 88: 272
+- iteration 89: 272
+- iteration 90: 272
+- iteration 91: 272
+- iteration 92: 272
+- iteration 93: 272
+- iteration 94: 272
+- iteration 95: 272
+- iteration 96: 272
+- iteration 97: 272
+- iteration 98: 272
+- iteration 99: 272
+- iteration 100: 272
+- iteration 101: 272
+- iteration 102: 272

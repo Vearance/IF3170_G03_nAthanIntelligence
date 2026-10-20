@@ -1,0 +1,103 @@
+Search Result
+===================================
+input: C:\Users\yips9\Documents\Kuliah\AI\IF3170_G03_nAthanIntelligence\test\input\test-4.json
+algorithm: hill-climbing-random-restart
+iterations: 31
+duration_seconds: 6.681866
+packages_placed: 13 / 18
+final_value: 273
+final_state_valid: True
+
+parameters and metrics:
+- restart_count: 10
+- max_restarts: 10
+- iterations_per_restart: [3, 3, 3, 2, 3, 3, 3, 2, 3, 3, 3]
+
+initial state:
+value: 254
+- P401: position=(2, 1, 1), orientation={'w': 'x', 'l': 'y', 'h': 'z'}
+- P402: position=(2, 2, 0), orientation={'w': 'x', 'l': 'z', 'h': 'y'}
+- P403: position=(3, 3, 0), orientation={'w': 'x', 'l': 'z', 'h': 'y'}
+- P404: outside truck
+- P405: outside truck
+- P406: position=(0, 0, 0), orientation={'w': 'y', 'l': 'x', 'h': 'z'}
+- P407: position=(1, 2, 2), orientation={'w': 'y', 'l': 'z', 'h': 'x'}
+- P408: position=(0, 2, 0), orientation={'w': 'x', 'l': 'y', 'h': 'z'}
+- P409: outside truck
+- P410: outside truck
+- P411: position=(3, 1, 0), orientation={'w': 'y', 'l': 'z', 'h': 'x'}
+- P412: position=(3, 0, 0), orientation={'w': 'z', 'l': 'y', 'h': 'x'}
+- P413: position=(2, 3, 1), orientation={'w': 'y', 'l': 'x', 'h': 'z'}
+- P414: position=(1, 0, 0), orientation={'w': 'y', 'l': 'z', 'h': 'x'}
+- P415: position=(3, 0, 2), orientation={'w': 'x', 'l': 'y', 'h': 'z'}
+- P416: position=(0, 0, 2), orientation={'w': 'x', 'l': 'z', 'h': 'y'}
+- P417: outside truck
+- P418: position=(1, 1, 2), orientation={'w': 'z', 'l': 'x', 'h': 'y'}
+
+final state:
+value: 273
+- P401: position=(0, 1, 0), orientation={'w': 'x', 'l': 'y', 'h': 'z'}
+- P402: position=(3, 0, 0), orientation={'w': 'y', 'l': 'x', 'h': 'z'}
+- P403: position=(3, 2, 0), orientation={'w': 'y', 'l': 'x', 'h': 'z'}
+- P404: outside truck
+- P405: position=(0, 0, 0), orientation={'w': 'y', 'l': 'x', 'h': 'z'}
+- P406: position=(0, 0, 1), orientation={'w': 'x', 'l': 'y', 'h': 'z'}
+- P407: outside truck
+- P408: position=(2, 0, 1), orientation={'w': 'z', 'l': 'x', 'h': 'y'}
+- P409: position=(1, 1, 1), orientation={'w': 'z', 'l': 'y', 'h': 'x'}
+- P410: outside truck
+- P411: position=(3, 3, 0), orientation={'w': 'z', 'l': 'y', 'h': 'x'}
+- P412: position=(2, 0, 0), orientation={'w': 'y', 'l': 'x', 'h': 'z'}
+- P413: position=(2, 2, 0), orientation={'w': 'x', 'l': 'y', 'h': 'z'}
+- P414: outside truck
+- P415: position=(2, 1, 1), orientation={'w': 'x', 'l': 'z', 'h': 'y'}
+- P416: outside truck
+- P417: position=(3, 1, 1), orientation={'w': 'z', 'l': 'y', 'h': 'x'}
+- P418: position=(1, 2, 2), orientation={'w': 'z', 'l': 'x', 'h': 'y'}
+
+objective history:
+- iteration 0: 254
+- iteration 1: 271
+- iteration 2: 272
+- iteration 3: 272
+- iteration 4: 271
+- iteration 5: 272
+- iteration 6: 272
+- iteration 7: 264
+- iteration 8: 269
+- iteration 9: 269
+- iteration 10: 254
+- iteration 11: 254
+- iteration 12: 255
+- iteration 13: 256
+- iteration 14: 256
+- iteration 15: 255
+- iteration 16: 273
+- iteration 17: 273
+- iteration 18: 261
+- iteration 19: 262
+- iteration 20: 262
+- iteration 21: 265
+- iteration 22: 265
+- iteration 23: 263
+- iteration 24: 265
+- iteration 25: 265
+- iteration 26: 244
+- iteration 27: 253
+- iteration 28: 253
+- iteration 29: 269
+- iteration 30: 270
+- iteration 31: 270
+
+objective history per search (0 = initial search):
+- search 0: [254, 271, 272, 272]
+- search 1: [254, 271, 272, 272]
+- search 2: [254, 264, 269, 269]
+- search 3: [252, 254, 254]
+- search 4: [254, 255, 256, 256]
+- search 5: [227, 255, 273, 273]
+- search 6: [259, 261, 262, 262]
+- search 7: [237, 265, 265]
+- search 8: [260, 263, 265, 265]
+- search 9: [226, 244, 253, 253]
+- search 10: [260, 269, 270, 270]
