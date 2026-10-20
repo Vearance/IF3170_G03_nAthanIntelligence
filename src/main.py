@@ -8,6 +8,8 @@ from typing import Any
 
 from src.algo.genetic import genetic_algorithm
 from src.algo.hill_climb import steepest_ascent_hill_climbing
+from src.algo.hill_climb_random_restart import random_restart_hill_climbing
+from src.algo.hill_climb_sideway import hill_climbing_with_sideways_move
 from src.algo.simulated_annealing import simulated_annealing
 from src.models.result import Result
 from src.models.state import State
@@ -25,6 +27,8 @@ DEFAULT_OUTPUT_DIRECTORY = REPOSITORY_ROOT / "output"
 DEFAULT_INPUT_FILE = Path("test/input/test-1.json")
 SNAPSHOT_ALIASES = {
     "hill-climbing": "hc",
+    "hill-climbing-sideways": "hc-sideways",
+    "hill-climbing-random-restart": "hc-restart",
     "simulated-annealing": "sa",
     "genetic-algorithm": "ga",
 }
@@ -99,7 +103,8 @@ def _format_details(
         "parameters and metrics:",
     ]
     if metrics:
-        lines.extend(f"- {name}: {value}" for name, value in metrics.items())
+        lines.extend(f"- {name}: {value}" for name, value in metrics.items()
+                     if name != "restart_histories")
     else:
         lines.append("- none")
 
@@ -112,6 +117,12 @@ def _format_details(
         f"- iteration {iteration}: {value}"
         for iteration, value in enumerate(result.value_history)
     )
+    if "restart_histories" in metrics:
+        lines.extend(["", "objective history per search (0 = initial search):"])
+        lines.extend(
+            f"- search {index}: {history}"
+            for index, history in enumerate(metrics["restart_histories"])
+        )
     return "\n".join(lines) + "\n"
 
 
@@ -120,6 +131,16 @@ def _run_algorithm(problem: Any, args: argparse.Namespace) -> Result:
 
     if args.algorithm == "hill-climbing":
         return steepest_ascent_hill_climbing(initial_state)
+
+    if args.algorithm == "hill-climbing-sideways":
+        return hill_climbing_with_sideways_move(
+            initial_state, max_sideways_moves=args.max_sideways_moves, seed=args.seed
+        )
+
+    if args.algorithm == "hill-climbing-random-restart":
+        return random_restart_hill_climbing(
+            initial_state, max_restarts=args.max_restarts, seed=args.seed
+        )
 
     if args.algorithm == "genetic-algorithm":
         return genetic_algorithm(
@@ -154,6 +175,8 @@ def _build_parser() -> argparse.ArgumentParser:
         "--algorithm",
         choices=(
             "hill-climbing",
+            "hill-climbing-sideways",
+            "hill-climbing-random-restart",
             "simulated-annealing",
             "genetic-algorithm",
         ),
@@ -161,10 +184,22 @@ def _build_parser() -> argparse.ArgumentParser:
         help="algorithm to run (default: hill-climbing)",
     )
     parser.add_argument(
+        "--max-sideways-moves",
+        type=_non_negative_int,
+        default=100,
+        help="maximum total sideways moves for hill-climbing (default: 100)",
+    )
+    parser.add_argument(
+        "--max-restarts",
+        type=_non_negative_int,
+        default=10,
+        help="maximum restarts after the initial hill-climbing search (default: 10)",
+    )
+    parser.add_argument(
         "--iterations",
         type=_non_negative_int,
         default=500,
-        help="maximum iterations/generations (default: 500)",
+        help="maximum iterations for SA or generations for GA (default: 500)",
     )
     parser.add_argument(
         "--population-size",
