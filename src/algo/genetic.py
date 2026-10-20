@@ -92,8 +92,6 @@ def genetic_algorithm(
         duration_seconds=perf_counter() - started_at,
         metrics={
             "population_size": population_size,
-            "max_iterations": max_iterations,
-            "seed": seed,
             "mean_value_history": mean_value_history,
         },
     )
