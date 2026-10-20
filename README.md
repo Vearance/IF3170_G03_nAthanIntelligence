@@ -17,6 +17,8 @@ uv run vis test-4
 # plus output/{input}_{algorithm}_details.txt
 uv run solve
 uv run solve test-4 --algorithm hill-climbing
+uv run solve test-4 --algorithm hill-climbing-sideways --max-sideways-moves 20
+uv run solve test-4 --algorithm hill-climbing-random-restart --max-restarts 10 --seed 42
 uv run solve test-4 --algorithm simulated-annealing --iterations 1000 --seed 42
 uv run solve test-4 --algorithm genetic-algorithm --population-size 50 --iterations 100 --seed 42
 

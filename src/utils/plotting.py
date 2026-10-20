@@ -6,6 +6,8 @@ from src.models.result import Result
 
 # func(general): memilih plot sesuai algoritma 
 def create_search_plots(result: Result, algorithm: str) -> list[Figure]:
+    if algorithm in {"hill-climbing-random-restart", "Random Restart Hill-Climbing"}:
+        return [create_restart_plot(result)]
     if algorithm in {"genetic-algorithm", "Genetic Algorithm"}:
         return [create_genetic_plot(result)]
     if algorithm in {"simulated-annealing", "Simulated Annealing"}:
@@ -13,6 +15,8 @@ def create_search_plots(result: Result, algorithm: str) -> list[Figure]:
         if "acceptance_probability_history" in result.metrics:
             figures.append(create_annealing_plot(result))
         return figures
+    if algorithm in {"hill-climbing-sideways", "Hill-Climbing with Sideways Move"}:
+        return [create_objective_plot(result, "Hill-Climbing with Sideways Move")]
     return [create_objective_plot(result, "Steepest-Ascent Hill-Climbing")]
 
 
@@ -25,6 +29,24 @@ def create_objective_plot(
     ax.plot(result.value_history, marker=".")
     ax.set(title=title, xlabel="Iterasi", ylabel="Nilai objective function")
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.grid(alpha=0.2)
+    fig.tight_layout()
+    return fig
+
+
+def create_restart_plot(result: Result) -> Figure:
+    fig = Figure(figsize=(8, 4.5), dpi=160)
+    ax = fig.subplots()
+    offset = 0
+    for index, history in enumerate(result.metrics["restart_histories"]):
+        ax.plot(range(offset, offset + len(history)), history, marker=".",
+                label="Awal" if index == 0 else f"Restart {index}")
+        offset += len(history) - 1
+    ax.axhline(result.state.value, linestyle=":", label="Hasil terbaik")
+    ax.set(title="Random Restart Hill-Climbing", xlabel="Total iterasi pencarian lokal",
+           ylabel="Nilai objective function")
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.legend(fontsize="small")
     ax.grid(alpha=0.2)
     fig.tight_layout()
     return fig

@@ -20,6 +20,8 @@ import viser
 
 from src.algo.genetic import genetic_algorithm
 from src.algo.hill_climb import steepest_ascent_hill_climbing
+from src.algo.hill_climb_random_restart import random_restart_hill_climbing
+from src.algo.hill_climb_sideway import hill_climbing_with_sideways_move
 from src.algo.simulated_annealing import simulated_annealing
 from src.models.state import Grid, State
 from src.models.types.orientation import Orientation
@@ -152,6 +154,10 @@ def _result_details(result: Any) -> str:
         "neighbor_states_evaluated": "neighbors evaluated",
         "accepted_moves": "accepted moves",
         "stuck_frequency": "stuck count",
+        "sideways_moves": "sideways moves",
+        "restart_count": "restarts",
+        "max_restarts": "maximum restarts",
+        "iterations_per_restart": "iterations per search (initial, restarts)",
     }
     details = []
     for name, value in values.items():
@@ -162,7 +168,7 @@ def _result_details(result: Any) -> str:
 
     if isinstance(metrics, Mapping):
         for name, value in metrics.items():
-            if name not in {"population_size", "accepted_moves", "stuck_frequency"}:
+            if name not in {"population_size", "accepted_moves", "stuck_frequency", "sideways_moves", "max_sideways_moves", "restart_count", "max_restarts", "iterations_per_restart"}:
                 continue
             label = labels.get(name, name.replace("_", " "))
             details.append(f"- {label}: {value}")
@@ -252,6 +258,20 @@ def create_server(
             min=0,
             step=1,
             visible=algorithm.value == "Simulated Annealing",
+        )
+        sideways_limit = server.gui.add_number(
+            "Maximum sideways moves",
+            initial_value=100,
+            min=0,
+            step=1,
+            visible=algorithm.value == "Hill-Climbing with Sideways Move",
+        )
+        restart_limit = server.gui.add_number(
+            "Maximum restarts",
+            initial_value=10,
+            min=0,
+            step=1,
+            visible=algorithm.value == "Random Restart Hill-Climbing",
         )
         ga_population = server.gui.add_number(
             "Population size",
@@ -468,6 +488,8 @@ def create_server(
         parameters = inspect.signature(runner).parameters
         if algorithm.value in {
             "Steepest-Ascent Hill-Climbing",
+            "Hill-Climbing with Sideways Move",
+            "Random Restart Hill-Climbing",
             "Simulated Annealing",
             "Genetic Algorithm",
         }:
@@ -482,6 +504,10 @@ def create_server(
         runner_kwargs = {}
         if algorithm.value == "Simulated Annealing":
             runner_kwargs["max_iterations"] = int(sa_iterations.value)
+        elif algorithm.value == "Hill-Climbing with Sideways Move":
+            runner_kwargs["max_sideways_moves"] = int(sideways_limit.value)
+        elif algorithm.value == "Random Restart Hill-Climbing":
+            runner_kwargs["max_restarts"] = int(restart_limit.value)
         elif algorithm.value == "Genetic Algorithm":
             runner_kwargs["population_size"] = int(ga_population.value)
             runner_kwargs["max_iterations"] = int(ga_iterations.value)
@@ -543,6 +569,8 @@ def create_server(
 
     def update_algorithm(_) -> None:
         sa_iterations.visible = algorithm.value == "Simulated Annealing"
+        sideways_limit.visible = algorithm.value == "Hill-Climbing with Sideways Move"
+        restart_limit.visible = algorithm.value == "Random Restart Hill-Climbing"
         ga_population.visible = algorithm.value == "Genetic Algorithm"
         ga_iterations.visible = algorithm.value == "Genetic Algorithm"
         refresh()
@@ -829,6 +857,22 @@ def main() -> None:
             "Steepest-Ascent Hill-Climbing": lambda current_state, on_iteration=None: (
                 steepest_ascent_hill_climbing(
                     current_state,
+                    on_iteration=on_iteration,
+                )
+            ),
+            "Hill-Climbing with Sideways Move": lambda current_state, max_sideways_moves=100, on_iteration=None: (
+                hill_climbing_with_sideways_move(
+                    current_state,
+                    max_sideways_moves=max_sideways_moves,
+                    seed=args.seed,
+                    on_iteration=on_iteration,
+                )
+            ),
+            "Random Restart Hill-Climbing": lambda current_state, max_restarts=10, on_iteration=None: (
+                random_restart_hill_climbing(
+                    current_state,
+                    max_restarts=max_restarts,
+                    seed=args.seed,
                     on_iteration=on_iteration,
                 )
             ),
