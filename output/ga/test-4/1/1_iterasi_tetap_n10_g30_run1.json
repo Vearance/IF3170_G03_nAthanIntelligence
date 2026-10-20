@@ -1,0 +1,806 @@
+{
+  "algorithm": "genetic-algorithm",
+  "problem": {
+    "truck": {
+      "dimensions": {
+        "w": 4,
+        "l": 4,
+        "h": 3
+      },
+      "maxCapacity": 35
+    },
+    "packages": [
+      {
+        "id": "P401",
+        "dimensions": {
+          "w": 2,
+          "l": 2,
+          "h": 1
+        },
+        "orientation": {
+          "w": "x",
+          "l": "y",
+          "h": "z"
+        },
+        "value": 30,
+        "weight": 4,
+        "isFragile": false,
+        "eta": 1
+      },
+      {
+        "id": "P402",
+        "dimensions": {
+          "w": 2,
+          "l": 1,
+          "h": 1
+        },
+        "orientation": {
+          "w": "y",
+          "l": "x",
+          "h": "z"
+        },
+        "value": 18,
+        "weight": 2,
+        "isFragile": false,
+        "eta": 2
+      },
+      {
+        "id": "P403",
+        "dimensions": {
+          "w": 1,
+          "l": 1,
+          "h": 1
+        },
+        "orientation": {
+          "w": "x",
+          "l": "y",
+          "h": "z"
+        },
+        "value": 8,
+        "weight": 1,
+        "isFragile": false,
+        "eta": 3
+      },
+      {
+        "id": "P404",
+        "dimensions": {
+          "w": 2,
+          "l": 2,
+          "h": 2
+        },
+        "orientation": {
+          "w": "z",
+          "l": "y",
+          "h": "x"
+        },
+        "value": 50,
+        "weight": 8,
+        "isFragile": false,
+        "eta": 1
+      },
+      {
+        "id": "P405",
+        "dimensions": {
+          "w": 1,
+          "l": 2,
+          "h": 1
+        },
+        "orientation": {
+          "w": "x",
+          "l": "z",
+          "h": "y"
+        },
+        "value": 17,
+        "weight": 2,
+        "isFragile": false,
+        "eta": 4
+      },
+      {
+        "id": "P406",
+        "dimensions": {
+          "w": 2,
+          "l": 1,
+          "h": 2
+        },
+        "orientation": {
+          "w": "y",
+          "l": "z",
+          "h": "x"
+        },
+        "value": 32,
+        "weight": 4,
+        "isFragile": false,
+        "eta": 2
+      },
+      {
+        "id": "P407",
+        "dimensions": {
+          "w": 1,
+          "l": 1,
+          "h": 2
+        },
+        "orientation": {
+          "w": "x",
+          "l": "z",
+          "h": "y"
+        },
+        "value": 13,
+        "weight": 2,
+        "isFragile": false,
+        "eta": 5
+      },
+      {
+        "id": "P408",
+        "dimensions": {
+          "w": 2,
+          "l": 2,
+          "h": 1
+        },
+        "orientation": {
+          "w": "y",
+          "l": "x",
+          "h": "z"
+        },
+        "value": 28,
+        "weight": 3,
+        "isFragile": true,
+        "eta": 3
+      },
+      {
+        "id": "P409",
+        "dimensions": {
+          "w": 1,
+          "l": 3,
+          "h": 1
+        },
+        "orientation": {
+          "w": "x",
+          "l": "y",
+          "h": "z"
+        },
+        "value": 22,
+        "weight": 3,
+        "isFragile": false,
+        "eta": 1
+      },
+      {
+        "id": "P410",
+        "dimensions": {
+          "w": 3,
+          "l": 1,
+          "h": 1
+        },
+        "orientation": {
+          "w": "z",
+          "l": "x",
+          "h": "y"
+        },
+        "value": 20,
+        "weight": 3,
+        "isFragile": false,
+        "eta": 2
+      },
+      {
+        "id": "P411",
+        "dimensions": {
+          "w": 1,
+          "l": 1,
+          "h": 1
+        },
+        "orientation": {
+          "w": "z",
+          "l": "y",
+          "h": "x"
+        },
+        "value": 9,
+        "weight": 1,
+        "isFragile": false,
+        "eta": 6
+      },
+      {
+        "id": "P412",
+        "dimensions": {
+          "w": 2,
+          "l": 1,
+          "h": 1
+        },
+        "orientation": {
+          "w": "x",
+          "l": "z",
+          "h": "y"
+        },
+        "value": 16,
+        "weight": 2,
+        "isFragile": false,
+        "eta": 3
+      },
+      {
+        "id": "P413",
+        "dimensions": {
+          "w": 1,
+          "l": 2,
+          "h": 2
+        },
+        "orientation": {
+          "w": "z",
+          "l": "x",
+          "h": "y"
+        },
+        "value": 31,
+        "weight": 4,
+        "isFragile": false,
+        "eta": 2
+      },
+      {
+        "id": "P414",
+        "dimensions": {
+          "w": 2,
+          "l": 2,
+          "h": 1
+        },
+        "orientation": {
+          "w": "x",
+          "l": "y",
+          "h": "z"
+        },
+        "value": 26,
+        "weight": 4,
+        "isFragile": false,
+        "eta": 4
+      },
+      {
+        "id": "P415",
+        "dimensions": {
+          "w": 1,
+          "l": 1,
+          "h": 1
+        },
+        "orientation": {
+          "w": "y",
+          "l": "z",
+          "h": "x"
+        },
+        "value": 7,
+        "weight": 1,
+        "isFragile": false,
+        "eta": 5
+      },
+      {
+        "id": "P416",
+        "dimensions": {
+          "w": 3,
+          "l": 1,
+          "h": 1
+        },
+        "orientation": {
+          "w": "x",
+          "l": "y",
+          "h": "z"
+        },
+        "value": 21,
+        "weight": 3,
+        "isFragile": false,
+        "eta": 2
+      },
+      {
+        "id": "P417",
+        "dimensions": {
+          "w": 2,
+          "l": 3,
+          "h": 1
+        },
+        "orientation": {
+          "w": "y",
+          "l": "x",
+          "h": "z"
+        },
+        "value": 40,
+        "weight": 6,
+        "isFragile": false,
+        "eta": 1
+      },
+      {
+        "id": "P418",
+        "dimensions": {
+          "w": 1,
+          "l": 2,
+          "h": 1
+        },
+        "orientation": {
+          "w": "x",
+          "l": "y",
+          "h": "z"
+        },
+        "value": 15,
+        "weight": 2,
+        "isFragile": false,
+        "eta": 3
+      }
+    ]
+  },
+  "initial_state": {
+    "grid": [
+      [
+        [
+          "P409",
+          null,
+          "P410",
+          "P402"
+        ],
+        [
+          "P418",
+          "P408",
+          null,
+          "P417"
+        ],
+        [
+          "P418",
+          "P408",
+          "P401",
+          "P417"
+        ],
+        [
+          null,
+          "P403",
+          "P401",
+          null
+        ]
+      ],
+      [
+        [
+          "P409",
+          null,
+          "P410",
+          "P402"
+        ],
+        [
+          "P412",
+          "P408",
+          null,
+          "P417"
+        ],
+        [
+          "P406",
+          "P408",
+          "P401",
+          "P417"
+        ],
+        [
+          "P406",
+          null,
+          "P401",
+          null
+        ]
+      ],
+      [
+        [
+          "P409",
+          null,
+          "P410",
+          null
+        ],
+        [
+          "P412",
+          null,
+          "P405",
+          "P417"
+        ],
+        [
+          "P406",
+          null,
+          "P405",
+          "P417"
+        ],
+        [
+          "P406",
+          "P407",
+          "P407",
+          null
+        ]
+      ]
+    ],
+    "pkg_orientation": {
+      "P401": {
+        "w": "z",
+        "l": "y",
+        "h": "x"
+      },
+      "P402": {
+        "w": "z",
+        "l": "y",
+        "h": "x"
+      },
+      "P403": {
+        "w": "y",
+        "l": "x",
+        "h": "z"
+      },
+      "P404": {
+        "w": "x",
+        "l": "z",
+        "h": "y"
+      },
+      "P405": {
+        "w": "x",
+        "l": "y",
+        "h": "z"
+      },
+      "P406": {
+        "w": "y",
+        "l": "x",
+        "h": "z"
+      },
+      "P407": {
+        "w": "z",
+        "l": "y",
+        "h": "x"
+      },
+      "P408": {
+        "w": "y",
+        "l": "z",
+        "h": "x"
+      },
+      "P409": {
+        "w": "x",
+        "l": "z",
+        "h": "y"
+      },
+      "P410": {
+        "w": "z",
+        "l": "y",
+        "h": "x"
+      },
+      "P411": {
+        "w": "z",
+        "l": "y",
+        "h": "x"
+      },
+      "P412": {
+        "w": "z",
+        "l": "x",
+        "h": "y"
+      },
+      "P413": {
+        "w": "z",
+        "l": "x",
+        "h": "y"
+      },
+      "P414": {
+        "w": "x",
+        "l": "y",
+        "h": "z"
+      },
+      "P415": {
+        "w": "y",
+        "l": "z",
+        "h": "x"
+      },
+      "P416": {
+        "w": "z",
+        "l": "x",
+        "h": "y"
+      },
+      "P417": {
+        "w": "y",
+        "l": "z",
+        "h": "x"
+      },
+      "P418": {
+        "w": "z",
+        "l": "y",
+        "h": "x"
+      }
+    },
+    "out_pkg": [
+      "P404",
+      "P411",
+      "P413",
+      "P414",
+      "P415",
+      "P416"
+    ],
+    "value": 259
+  },
+  "final_state": {
+    "grid": [
+      [
+        [
+          "P409",
+          null,
+          "P410",
+          null
+        ],
+        [
+          "P409",
+          "P408",
+          "P402",
+          "P417"
+        ],
+        [
+          "P409",
+          "P408",
+          "P402",
+          "P417"
+        ],
+        [
+          null,
+          null,
+          null,
+          null
+        ]
+      ],
+      [
+        [
+          null,
+          null,
+          "P410",
+          null
+        ],
+        [
+          null,
+          "P408",
+          null,
+          "P417"
+        ],
+        [
+          null,
+          "P408",
+          null,
+          "P417"
+        ],
+        [
+          null,
+          null,
+          null,
+          null
+        ]
+      ],
+      [
+        [
+          null,
+          null,
+          "P410",
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          "P417"
+        ],
+        [
+          null,
+          null,
+          null,
+          "P417"
+        ],
+        [
+          null,
+          null,
+          null,
+          null
+        ]
+      ]
+    ],
+    "pkg_orientation": {
+      "P401": {
+        "w": "y",
+        "l": "x",
+        "h": "z"
+      },
+      "P402": {
+        "w": "y",
+        "l": "z",
+        "h": "x"
+      },
+      "P403": {
+        "w": "x",
+        "l": "z",
+        "h": "y"
+      },
+      "P404": {
+        "w": "x",
+        "l": "y",
+        "h": "z"
+      },
+      "P405": {
+        "w": "z",
+        "l": "x",
+        "h": "y"
+      },
+      "P406": {
+        "w": "y",
+        "l": "x",
+        "h": "z"
+      },
+      "P407": {
+        "w": "z",
+        "l": "y",
+        "h": "x"
+      },
+      "P408": {
+        "w": "y",
+        "l": "z",
+        "h": "x"
+      },
+      "P409": {
+        "w": "x",
+        "l": "y",
+        "h": "z"
+      },
+      "P410": {
+        "w": "z",
+        "l": "y",
+        "h": "x"
+      },
+      "P411": {
+        "w": "y",
+        "l": "x",
+        "h": "z"
+      },
+      "P412": {
+        "w": "z",
+        "l": "x",
+        "h": "y"
+      },
+      "P413": {
+        "w": "z",
+        "l": "x",
+        "h": "y"
+      },
+      "P414": {
+        "w": "x",
+        "l": "y",
+        "h": "z"
+      },
+      "P415": {
+        "w": "y",
+        "l": "z",
+        "h": "x"
+      },
+      "P416": {
+        "w": "z",
+        "l": "x",
+        "h": "y"
+      },
+      "P417": {
+        "w": "y",
+        "l": "z",
+        "h": "x"
+      },
+      "P418": {
+        "w": "z",
+        "l": "y",
+        "h": "x"
+      }
+    },
+    "out_pkg": [
+      "P401",
+      "P403",
+      "P404",
+      "P405",
+      "P406",
+      "P407",
+      "P411",
+      "P412",
+      "P413",
+      "P414",
+      "P415",
+      "P416",
+      "P418"
+    ],
+    "value": 128
+  },
+  "group": "iterasi_tetap",
+  "run": 1,
+  "seed": 4,
+  "population_size": 10,
+  "iterations": 30,
+  "initial_value": 259,
+  "final_value": 128,
+  "duration_seconds": 1.3600290610011143,
+  "max_value_history": [
+    259,
+    250,
+    189,
+    189,
+    159,
+    159,
+    159,
+    159,
+    159,
+    159,
+    159,
+    159,
+    159,
+    159,
+    150,
+    150,
+    143,
+    143,
+    128,
+    128,
+    130,
+    130,
+    149,
+    128,
+    128,
+    128,
+    128,
+    128,
+    128,
+    128,
+    128
+  ],
+  "mean_value_history": [
+    247.8,
+    196.2,
+    154.7,
+    151.2,
+    136.0,
+    136.3,
+    145.7,
+    140.9,
+    142.0,
+    149.1,
+    146.5,
+    140.5,
+    140.2,
+    140.1,
+    135.9,
+    135.9,
+    133.7,
+    129.5,
+    127.3,
+    125.8,
+    128.2,
+    122.6,
+    122.4,
+    120.3,
+    123.1,
+    128.0,
+    128.0,
+    127.7,
+    124.0,
+    124.0,
+    126.0
+  ],
+  "metrics": {
+    "population_size": 10,
+    "max_iterations": 30,
+    "seed": 4,
+    "mean_value_history": [
+      247.8,
+      196.2,
+      154.7,
+      151.2,
+      136.0,
+      136.3,
+      145.7,
+      140.9,
+      142.0,
+      149.1,
+      146.5,
+      140.5,
+      140.2,
+      140.1,
+      135.9,
+      135.9,
+      133.7,
+      129.5,
+      127.3,
+      125.8,
+      128.2,
+      122.6,
+      122.4,
+      120.3,
+      123.1,
+      128.0,
+      128.0,
+      127.7,
+      124.0,
+      124.0,
+      126.0
+    ]
+  }
+}

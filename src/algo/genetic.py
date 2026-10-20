@@ -22,7 +22,6 @@ from src.utils.move import (
 )
 from src.utils.random_state import random_initial_state, random_position
 
-CROSSOVER_RATE = 0.8
 MUTATION_RATE = 0.2
 
 
@@ -67,16 +66,12 @@ def genetic_algorithm(
 
     # tiap generasi dibangkitkan
     for generation in range(1, max_iterations + 1):
-        elite = max(population, key=lambda state: state.value).copy()
-        next_population = [elite]
+        next_population: list[State] = []
 
         while len(next_population) < population_size:
             first_parent = _select_parent(population, rng)
-            if rng.random() < CROSSOVER_RATE:
-                second_parent = _select_parent(population, rng)
-                child = _crossover(first_parent, second_parent, rng)
-            else:
-                child = first_parent.copy()
+            second_parent = _select_parent(population, rng)
+            child = _crossover(first_parent, second_parent, rng)
 
             if rng.random() < MUTATION_RATE:
                 child = _mutate(child, rng)
@@ -97,13 +92,7 @@ def genetic_algorithm(
         duration_seconds=perf_counter() - started_at,
         metrics={
             "population_size": population_size,
-            "max_iterations": max_iterations,
-            "seed": seed,
             "mean_value_history": mean_value_history,
-            "crossover_rate": CROSSOVER_RATE,
-            "mutation_rate": MUTATION_RATE,
-            "elite_count": 1,
-            "termination_reason": "max_iterations",
         },
     )
 
@@ -122,18 +111,15 @@ def _initialize_population(
 def _select_parent(
     population: list[State],
     rng: Random,
-    *,
-    tournament_size: int = 3,
 ) -> State:
     if not population:
         raise ValueError("population tidak boleh kosong")
-    if isinstance(tournament_size, bool) or not isinstance(tournament_size, int):
-        raise TypeError("tournament_size harus berupa integer")
-    if tournament_size < 1:
-        raise ValueError("tournament_size minimal 1")
 
-    participants = rng.sample(population, min(tournament_size, len(population)))
-    return max(participants, key=lambda state: state.value)
+    # fitness dicatat ulang untuk seluruh populasi sebelum seleksi generasi ini
+    weights = [state.value for state in population]
+    if sum(weights) == 0:
+        return rng.choice(population)
+    return rng.choices(population, weights=weights, k=1)[0]
 
 
 # func: membentuk State anak langsung dari dua parent
@@ -142,14 +128,20 @@ def _crossover(
     p2: State,
     rng: Random,
 ) -> State:
-    
+    package_ids = sorted(p1.problem.packages)
+    # tidak ada titik potong internal untuk kromosom kosong atau satu gen.
+    if len(package_ids) < 2:
+        return p1.copy()
+    cut = rng.randrange(1, len(package_ids))
+
     # init
     child = State.empty(p1.problem)
     proposals: list[tuple[str, Position]] = []
 
-    # pilih warisan dari p1 dan p2
-    for package_id in sorted(child.problem.packages):
-        parent = rng.choice((p1, p2))
+    # satu gen = posisi/status dalam-luar dan orientasi satu paket.
+    # prefix diwarisi dari p1, suffix dari p2 pada satu titik potong.
+    for index, package_id in enumerate(package_ids):
+        parent = p1 if index < cut else p2
         child.pkg_orientation[package_id] = replace(
             parent.pkg_orientation[package_id]
         )
@@ -225,6 +217,3 @@ def _record_statistics(
     values = [state.value for state in population]
     max_value_history.append(max(values))
     mean_value_history.append(sum(values) / len(values))
-
-
-
